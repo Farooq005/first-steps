@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Tracker Data Sync - Complete OAuth2</title>
+    <title>Anime Tracker Data Sync - Working Version</title>
     <style>
         * {
             margin: 0;
@@ -28,11 +28,12 @@
         .header {
             text-align: center;
             margin-bottom: 40px;
+            padding: 20px;
         }
 
         .header h1 {
-            font-size: 2.8rem;
-            margin-bottom: 10px;
+            font-size: 3rem;
+            margin-bottom: 15px;
             background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -56,17 +57,18 @@
             backdrop-filter: blur(10px);
             border-radius: 15px;
             padding: 30px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
         .card h2 {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             color: #4facfe;
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 1.5rem;
         }
 
         .form-group {
@@ -78,13 +80,14 @@
             margin-bottom: 8px;
             font-weight: 600;
             color: #e0e0e0;
+            font-size: 14px;
         }
 
         .form-control {
             width: 100%;
-            padding: 12px 16px;
+            padding: 14px 18px;
             border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
+            border-radius: 10px;
             background: rgba(255, 255, 255, 0.1);
             color: #fff;
             font-size: 16px;
@@ -110,7 +113,7 @@
 
         .radio-group {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             flex-wrap: wrap;
         }
 
@@ -118,16 +121,25 @@
             display: flex;
             align-items: center;
             cursor: pointer;
-            padding: 12px 18px;
-            border-radius: 8px;
+            padding: 12px 20px;
+            border-radius: 10px;
             transition: all 0.3s ease;
             border: 2px solid rgba(255, 255, 255, 0.2);
             background: rgba(255, 255, 255, 0.05);
+            min-width: 160px;
+            justify-content: center;
         }
 
         .radio-label:hover {
             background: rgba(255, 255, 255, 0.1);
             border-color: rgba(79, 172, 254, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .radio-label input[type="radio"] {
+            margin-right: 10px;
+            accent-color: #4facfe;
+            transform: scale(1.2);
         }
 
         .radio-label input[type="radio"]:checked + span {
@@ -135,24 +147,20 @@
             font-weight: 600;
         }
 
-        .radio-label input[type="radio"] {
-            margin-right: 8px;
-            accent-color: #4facfe;
-        }
-
         .btn {
-            padding: 12px 24px;
+            padding: 14px 28px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-right: 10px;
-            margin-bottom: 10px;
+            margin-right: 12px;
+            margin-bottom: 12px;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            min-height: 48px;
         }
 
         .btn-primary {
@@ -179,12 +187,13 @@
             background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
             color: white;
             font-size: 14px;
-            padding: 8px 16px;
+            padding: 10px 18px;
+            min-height: auto;
         }
 
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
 
         .btn:disabled {
@@ -194,17 +203,17 @@
         }
 
         .auth-section {
-            background: rgba(79, 172, 254, 0.1);
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);
             border: 1px solid rgba(79, 172, 254, 0.3);
-            border-radius: 12px;
-            padding: 25px;
-            margin: 20px 0;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 25px 0;
         }
 
         .auth-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 25px;
             align-items: center;
         }
 
@@ -212,63 +221,101 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 15px;
+            padding: 20px;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .auth-info {
             display: flex;
-            align-items: center;
-            gap: 12px;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .auth-platform {
+            font-weight: 600;
+            font-size: 16px;
+            color: #fff;
         }
 
         .auth-status {
-            padding: 4px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
+            display: inline-block;
         }
 
         .auth-status.authenticated {
             background: rgba(56, 239, 125, 0.2);
             color: #38ef7d;
+            border: 1px solid rgba(56, 239, 125, 0.3);
         }
 
         .auth-status.not-authenticated {
             background: rgba(245, 87, 108, 0.2);
             color: #f5576c;
+            border: 1px solid rgba(245, 87, 108, 0.3);
         }
 
-        .file-upload-section {
-            border: 2px dashed rgba(79, 172, 254, 0.5);
-            border-radius: 12px;
-            padding: 40px;
-            text-align: center;
-            margin: 20px 0;
+        /* JSON Section Styles */
+        #jsonSection {
             display: none;
+        }
+
+        .json-upload-area {
+            border: 3px dashed rgba(79, 172, 254, 0.5);
+            border-radius: 15px;
+            padding: 50px 30px;
+            text-align: center;
+            margin: 25px 0;
             transition: all 0.3s ease;
-            background: rgba(79, 172, 254, 0.05);
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.05) 0%, rgba(0, 242, 254, 0.05) 100%);
+            cursor: pointer;
         }
 
-        .file-upload-section:hover {
+        .json-upload-area:hover {
             border-color: #4facfe;
-            background: rgba(79, 172, 254, 0.1);
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%);
+            transform: translateY(-2px);
         }
 
-        .file-upload-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
+        .json-upload-area.dragover {
+            border-color: #00f2fe;
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
             color: #4facfe;
         }
 
-        .file-name {
-            margin-top: 15px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
+        .upload-title {
+            font-size: 1.5rem;
             font-weight: 600;
+            margin-bottom: 10px;
             color: #4facfe;
+        }
+
+        .upload-description {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+
+        .file-status {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .file-status.show {
+            display: block;
         }
 
         .progress-bar {
@@ -277,9 +324,13 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             overflow: hidden;
-            margin: 20px 0;
+            margin: 25px 0;
             display: none;
             position: relative;
+        }
+
+        .progress-bar.show {
+            display: block;
         }
 
         .progress-fill {
@@ -295,48 +346,58 @@
             padding: 25px;
             background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%);
             border-radius: 12px;
-            margin: 20px 0;
-            font-size: 1.2rem;
+            margin: 25px 0;
+            font-size: 1.3rem;
             font-weight: 600;
             border: 1px solid rgba(79, 172, 254, 0.3);
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
+            gap: 25px;
+            margin: 25px 0;
         }
 
         .stat-card {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-            padding: 25px;
-            border-radius: 12px;
+            padding: 30px;
+            border-radius: 15px;
             text-align: center;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
         }
 
         .stat-number {
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: bold;
             color: #4facfe;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
 
         .stat-label {
             color: rgba(255, 255, 255, 0.8);
             font-weight: 600;
+            font-size: 1rem;
         }
 
         .tabs {
             display: flex;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             border-bottom: 2px solid rgba(255, 255, 255, 0.2);
             overflow-x: auto;
         }
 
         .tab {
-            padding: 15px 25px;
+            padding: 18px 30px;
             background: none;
             border: none;
             color: rgba(255, 255, 255, 0.6);
@@ -374,7 +435,7 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 25px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
             overflow: hidden;
@@ -383,7 +444,7 @@
 
         .data-table th,
         .data-table td {
-            padding: 15px 20px;
+            padding: 18px 20px;
             text-align: left;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -401,18 +462,24 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
-        .data-table tbody tr.alternate {
+        .data-table tbody tr:nth-child(even) {
             background: rgba(255, 255, 255, 0.02);
         }
 
         .alert {
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin: 10px 0;
+            padding: 18px 25px;
+            border-radius: 10px;
+            margin: 15px 0;
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
         .alert-success {
@@ -427,15 +494,21 @@
             color: #f5576c;
         }
 
+        .alert-warning {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+        }
+
         .spinner {
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top: 3px solid #4facfe;
-            width: 30px;
-            height: 30px;
+            width: 35px;
+            height: 35px;
             animation: spin 2s linear infinite;
             display: inline-block;
-            margin-right: 10px;
+            margin-right: 15px;
         }
 
         @keyframes spin {
@@ -447,74 +520,33 @@
             display: none;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 25px;
             font-size: 1.1rem;
+            font-weight: 600;
         }
 
         .loading.active {
             display: flex;
         }
 
-        .info-banner {
-            background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%);
-            border: 1px solid rgba(255, 193, 7, 0.3);
-            border-radius: 12px;
-            padding: 20px;
-            margin: 20px 0;
-            color: #fff3cd;
-        }
-
-        .info-banner h3 {
-            color: #ffc107;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .info-banner ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .info-banner li {
-            padding: 5px 0;
-            padding-left: 20px;
-            position: relative;
-        }
-
-        .info-banner li:before {
-            content: "✓";
-            position: absolute;
-            left: 0;
-            color: #38ef7d;
-            font-weight: bold;
-        }
-
-        .config-section {
-            background: rgba(245, 87, 108, 0.1);
-            border: 1px solid rgba(245, 87, 108, 0.3);
-            border-radius: 12px;
-            padding: 25px;
-            margin: 20px 0;
-        }
-
-        .config-section h3 {
-            color: #f5576c;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .config-section code {
+        #syncLog {
+            max-height: 300px;
+            overflow-y: auto;
             background: rgba(0, 0, 0, 0.3);
-            padding: 2px 6px;
-            border-radius: 4px;
+            padding: 20px;
+            border-radius: 10px;
             font-family: 'Courier New', monospace;
-            color: #4facfe;
+            font-size: 14px;
+            line-height: 1.4;
         }
 
+        #syncLog div {
+            margin-bottom: 5px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -544,16 +576,33 @@
             .stats-grid {
                 grid-template-columns: 1fr;
             }
+
+            .auth-item {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+                margin-right: 0;
+            }
         }
 
-        /* Additional animations */
+        /* Animations */
         .card {
-            animation: slideIn 0.5s ease;
+            animation: slideUp 0.5s ease;
         }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(20px); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hide file input */
+        #jsonFile {
+            display: none;
         }
     </style>
 </head>
@@ -563,51 +612,31 @@
         <header class="header">
             <h1>🎌 Anime Tracker Data Sync</h1>
             <p>Synchronize your anime and manga lists between MyAnimeList and AniList</p>
-            <div class="subtitle">Complete OAuth2 Integration • Secure Token Management • JSON Import Support</div>
+            <div class="subtitle">OAuth2 Authentication • JSON Import • Real-time Sync</div>
         </header>
-
-        <!-- Configuration Notice -->
-        <section class="config-section">
-            <h3>⚠️ Configuration Required</h3>
-            <p>To enable OAuth2 authentication, update the <code>CONFIG</code> object in <code>complete_oauth_app.js</code>:</p>
-            <ul style="margin: 15px 0; padding-left: 20px;">
-                <li>Get MAL Client ID: <a href="https://myanimelist.net/apiconfig" target="_blank" style="color: #4facfe;">MAL API Config</a></li>
-                <li>Get AniList Client ID: <a href="https://anilist.co/settings/developer" target="_blank" style="color: #4facfe;">AniList Developer Settings</a></li>
-                <li>Set your redirect URI to: <code>https://yourdomain.com/callback</code></li>
-            </ul>
-        </section>
 
         <!-- Authentication Section -->
         <section class="card auth-section">
             <h2>🔐 OAuth2 Authentication</h2>
+            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 20px;">
+                Authenticate with your accounts to access private lists and enable syncing features.
+            </p>
             <div class="auth-grid">
                 <div class="auth-item">
                     <div class="auth-info">
-                        <strong>📚 MyAnimeList</strong>
+                        <div class="auth-platform">📚 MyAnimeList</div>
                         <span id="malAuthStatus" class="auth-status not-authenticated">❌ Not authenticated</span>
                     </div>
                     <button id="malAuthBtn" class="btn btn-auth">🔐 Authenticate MAL</button>
                 </div>
                 <div class="auth-item">
                     <div class="auth-info">
-                        <strong>📺 AniList</strong>
+                        <div class="auth-platform">📺 AniList</div>
                         <span id="anilistAuthStatus" class="auth-status not-authenticated">❌ Not authenticated</span>
                     </div>
                     <button id="anilistAuthBtn" class="btn btn-auth">🔐 Authenticate AniList</button>
                 </div>
             </div>
-        </section>
-
-        <!-- Features Info -->
-        <section class="info-banner">
-            <h3>🚀 Features</h3>
-            <ul>
-                <li>OAuth2 authentication with PKCE support (MAL) and Authorization Code flow (AniList)</li>
-                <li>Secure token storage with automatic expiration handling</li>
-                <li>JSON file import with robust validation and error handling</li>
-                <li>Public API fallback for users without authentication</li>
-                <li>Real-time sync progress tracking and detailed logging</li>
-            </ul>
         </section>
 
         <!-- Configuration Section -->
@@ -628,16 +657,16 @@
                 </div>
             </div>
 
-            <!-- Account Inputs -->
-            <div class="account-inputs">
+            <!-- Account Sync Section -->
+            <div id="accountSection">
                 <div class="input-row">
                     <div class="form-group">
                         <label for="malUsername" class="form-label">MyAnimeList Username</label>
-                        <input type="text" id="malUsername" class="form-control" placeholder="Enter MAL Username">
+                        <input type="text" id="malUsername" class="form-control" placeholder="Enter your MAL username">
                     </div>
                     <div class="form-group">
                         <label for="anilistUsername" class="form-label">AniList Username</label>
-                        <input type="text" id="anilistUsername" class="form-control" placeholder="Enter AniList Username">
+                        <input type="text" id="anilistUsername" class="form-control" placeholder="Enter your AniList username">
                     </div>
                 </div>
 
@@ -650,30 +679,36 @@
                 </div>
             </div>
 
-            <!-- JSON File Upload Section -->
-            <div id="fileUploadSection" class="file-upload-section">
-                <div class="file-upload-icon">📁</div>
-                <h3>Upload JSON File</h3>
-                <p>Select your anime/manga list in JSON format</p>
-                <input type="file" id="jsonFile" accept=".json" style="display: none;">
-                <button class="btn btn-secondary" onclick="document.getElementById('jsonFile').click()">
-                    Choose File
-                </button>
-                <div id="fileName" class="file-name" style="display: none;"></div>
-                <small style="color: rgba(255, 255, 255, 0.7); margin-top: 10px; display: block;">
-                    Supported format: Array of objects with "name", "mal", and "al" fields
-                </small>
-            </div>
+            <!-- JSON Import Section -->
+            <div id="jsonSection">
+                <div class="json-upload-area" onclick="document.getElementById('jsonFile').click()">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-title">Upload JSON File</div>
+                    <div class="upload-description">
+                        Click to select your anime/manga list in JSON format<br>
+                        <small>Supports your exact export format with "name", "mal", and "al" fields</small>
+                    </div>
+                    <input type="file" id="jsonFile" accept=".json">
+                    <button type="button" class="btn btn-secondary">Choose File</button>
+                </div>
 
-            <!-- JSON Username Input -->
-            <div id="jsonUsernameContainer" style="display: none;">
+                <div id="fileStatus" class="file-status"></div>
+
                 <div class="form-group">
                     <label for="jsonUsername" class="form-label">Target Username</label>
                     <input type="text" id="jsonUsername" class="form-control" 
-                           placeholder="Enter username for the target platform">
-                    <small style="color: rgba(255, 255, 255, 0.7); margin-top: 5px; display: block;">
-                        This is the username on the target platform where you want to sync the JSON data.
+                           placeholder="Enter username where you want to sync the JSON data">
+                    <small style="color: rgba(255, 255, 255, 0.7); margin-top: 8px; display: block;">
+                        This is the username on the target platform where the JSON entries will be synced.
                     </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="targetPlatform" class="form-label">Target Platform</label>
+                    <select class="form-control">
+                        <option value="anilist">📺 AniList</option>
+                        <option value="mal">📚 MyAnimeList</option>
+                    </select>
                 </div>
             </div>
         </section>
@@ -686,7 +721,7 @@
                 🎯 Ready to sync
             </div>
 
-            <div style="text-align: center;">
+            <div style="text-align: center; margin: 30px 0;">
                 <button id="fetchBtn" class="btn btn-primary">📥 Fetch Data</button>
                 <button id="compareBtn" class="btn btn-secondary" disabled>⚖️ Compare Lists</button>
                 <button id="syncBtn" class="btn btn-success" disabled>🚀 Start Sync</button>
@@ -726,20 +761,20 @@
 
             <div class="tab-content active" id="intersection">
                 <div id="intersectionStats"><h3>🤝 Common Items: 0</h3></div>
-                <div id="intersectionData"><p>🔍 No data to display</p></div>
+                <div id="intersectionData"><p>🔍 No data to display. Fetch and compare data to see results.</p></div>
             </div>
 
             <div class="tab-content" id="differences">
                 <div id="differencesStats"><h3>🔄 Items to Sync: 0</h3></div>
-                <div id="differencesData"><p>🔍 No data to display</p></div>
+                <div id="differencesData"><p>🔍 No data to display. Fetch and compare data to see results.</p></div>
             </div>
 
             <div class="tab-content" id="log">
-                <div id="syncLog"><p>📝 Application ready - click Fetch Data to begin!</p></div>
+                <div id="syncLog"><p>📝 Application ready! Select a sync mode and get started.</p></div>
             </div>
         </section>
     </div>
 
-    <script src="complete_oauth_app.js"></script>
+    <script src="final_working_app.js"></script>
 </body>
 </html>
