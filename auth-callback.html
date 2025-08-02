@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Callback - Anime Tracker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .callback-container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #4facfe;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .success {
+            color: #38ef7d;
+        }
+        .error {
+            color: #f5576c;
+        }
+    </style>
+</head>
+<body>
+    <div class="callback-container">
+        <h2>Processing Authentication...</h2>
+        <div class="spinner"></div>
+        <p id="status">Please wait while we complete the authentication process.</p>
+    </div>
+
+    <script>
+        // Handle OAuth callback
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        const statusElement = document.getElementById('status');
+
+        if (error) {
+            document.querySelector('.spinner').style.display = 'none';
+            statusElement.innerHTML = `<span class="error">Authentication failed: ${error}</span><br>You can close this window.`;
+        } else if (code) {
+            // Send the code to the parent window
+            if (window.opener) {
+                try {
+                    // Determine platform based on referrer
+                    let platform = 'unknown';
+                    if (document.referrer.includes('myanimelist')) {
+                        platform = 'mal';
+                    } else if (document.referrer.includes('anilist')) {
+                        platform = 'anilist';
+                    }
+
+                    // Post message to parent window
+                    window.opener.postMessage({
+                        type: 'oauth_callback',
+                        platform: platform,
+                        code: code
+                    }, window.location.origin);
+
+                    document.querySelector('.spinner').style.display = 'none';
+                    statusElement.innerHTML = `<span class="success">Authentication successful!</span><br>You can close this window.`;
+
+                    // Auto-close after 2 seconds
+                    setTimeout(() => {
+                        window.close();
+                    }, 2000);
+                } catch (e) {
+                    document.querySelector('.spinner').style.display = 'none';
+                    statusElement.innerHTML = `<span class="error">Error communicating with parent window.</span><br>You can close this window.`;
+                }
+            } else {
+                // Fallback: redirect to main app with parameters
+                window.location.href = `index.html?code=${code}`;
+            }
+        } else {
+            document.querySelector('.spinner').style.display = 'none';
+            statusElement.innerHTML = `<span class="error">No authorization code received.</span><br>You can close this window.`;
+        }
+    </script>
+</body>
+</html>
