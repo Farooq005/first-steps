@@ -7,17 +7,17 @@ const CONFIG = {
 
     // MyAnimeList API Configuration
     mal: {
-        client_id: 'your_mal_client_id_here',
-        client_secret: 'your_mal_client_secret_here', // Keep secret on server-side
-        redirect_uri: 'https://yourdomain.com/callback',
+        client_id: '7d40aab44a745bbefc83c9df14413f86',
+        client_secret: 'b777891e34ef1d5d3972c461ed123af68d5e1d5a1699b1f0945c1c045866148b', // Keep secret on server-side
+        redirect_uri: 'https://farooq005.github.io/first-steps/',
         api_base: 'https://api.myanimelist.net/v2'
     },
 
     // AniList API Configuration
     anilist: {
-        client_id: 'your_anilist_client_id_here',
-        client_secret: 'your_anilist_client_secret_here', // Keep secret on server-side
-        redirect_uri: 'https://yourdomain.com/callback',
+        client_id: '29038',
+        client_secret: 'EESvhR7XUzdpWNhWBRYPWGJjIGcP9qW04vUhT9QW', // Keep secret on server-side
+        redirect_uri: 'https://farooq005.github.io/first-steps/',
         api_base: 'https://graphql.anilist.co'
     },
 
