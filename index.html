@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Tracker Data Sync</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .radio-label input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .sync-direction {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .tab {
+            padding: 15px 25px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #4facfe;
+            border-bottom-color: #4facfe;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .data-table th {
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .alert-success {
+            background: rgba(56, 239, 125, 0.2);
+            border: 1px solid rgba(56, 239, 125, 0.3);
+        }
+
+        .alert-error {
+            background: rgba(245, 87, 108, 0.2);
+            border: 1px solid rgba(245, 87, 108, 0.3);
+        }
+
+        .file-upload {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .file-upload.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #4facfe;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        @media (max-width: 768px) {
+            .input-row {
+                grid-template-columns: 1fr;
+            }
+
+            .radio-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Anime Tracker Data Sync</h1>
+            <p>Synchronize your anime and manga lists between MyAnimeList and AniList</p>
+        </header>
+
+        <!-- User Input Section -->
+        <section class="card input-section">
+            <h2>Configuration</h2>
+
+            <div class="form-group">
+                <label class="form-label">Sync Type</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="syncType" value="account" checked>
+                        Account Sync
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="syncType" value="json">
+                        JSON File Import
+                    </label>
+                </div>
+            </div>
+
+            <div class="account-inputs">
+                <div class="input-row">
+                    <div class="form-group">
+                        <label for="malUsername" class="form-label">MyAnimeList Username</label>
+                        <input type="text" id="malUsername" class="form-control" placeholder="Enter MAL Username">
+                    </div>
+                    <div class="form-group">
+                        <label for="anilistUsername" class="form-label">AniList Username</label>
+                        <input type="text" id="anilistUsername" class="form-control" placeholder="Enter AniList Username">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="targetPlatform" class="form-label">Target Platform</label>
+                    <select id="targetPlatform" class="form-control">
+                        <option value="anilist">AniList</option>
+                        <option value="mal">MyAnimeList</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="file-upload" id="fileUpload">
+                <div>
+                    <input type="file" id="jsonFile" accept=".json" style="display: none;">
+                    <button class="btn btn-secondary" onclick="document.getElementById('jsonFile').click()">
+                        Choose JSON File
+                    </button>
+                    <p>Upload your anime/manga list in JSON format</p>
+                    <div id="fileName"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sync Operations Section -->
+        <section class="card">
+            <h2>Sync Operations</h2>
+
+            <div class="sync-direction" id="syncDirection">
+                Ready to sync
+            </div>
+
+            <div style="text-align: center;">
+                <button id="fetchBtn" class="btn btn-primary">Fetch Data</button>
+                <button id="compareBtn" class="btn btn-secondary" disabled>Compare Lists</button>
+                <button id="syncBtn" class="btn btn-success" disabled>Start Sync</button>
+                <button id="resetBtn" class="btn btn-danger">Reset</button>
+            </div>
+
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="loading" id="loadingIndicator">
+                <div class="spinner"></div>
+                <span id="loadingText">Processing...</span>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="card">
+            <h2>Results</h2>
+
+            <div class="tabs">
+                <button class="tab active" data-tab="intersection">Intersection</button>
+                <button class="tab" data-tab="differences">Differences</button>
+                <button class="tab" data-tab="log">Sync Log</button>
+            </div>
+
+            <div class="tab-content active" id="intersection">
+                <div id="intersectionStats"></div>
+                <div id="intersectionData"></div>
+            </div>
+
+            <div class="tab-content" id="differences">
+                <div id="differencesStats"></div>
+                <div id="differencesData"></div>
+            </div>
+
+            <div class="tab-content" id="log">
+                <div id="syncLog"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
