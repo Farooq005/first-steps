@@ -133,6 +133,13 @@
             color: white;
         }
 
+        .btn-auth {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
@@ -272,6 +279,53 @@
             display: flex;
         }
 
+        .auth-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .auth-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .auth-status.authenticated {
+            background: rgba(56, 239, 125, 0.2);
+            color: #38ef7d;
+        }
+
+        .auth-status.not-authenticated {
+            background: rgba(245, 87, 108, 0.2);
+            color: #f5576c;
+        }
+
+        .config-notice {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #fff3cd;
+        }
+
+        .config-notice h4 {
+            margin-bottom: 10px;
+            color: #ffc107;
+        }
+
+        .config-notice code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
         @media (max-width: 768px) {
             .input-row {
                 grid-template-columns: 1fr;
@@ -295,6 +349,34 @@
             <h1>Anime Tracker Data Sync</h1>
             <p>Synchronize your anime and manga lists between MyAnimeList and AniList</p>
         </header>
+
+        <!-- Configuration Notice -->
+        <div class="config-notice">
+            <h4>⚠️ Configuration Required</h4>
+            <p>To use real API authentication, please update the <code>CONFIG</code> object in <code>enhanced_app.js</code> with your actual client IDs:</p>
+            <ul>
+                <li>Get MAL Client ID from: <a href="https://myanimelist.net/apiconfig" target="_blank">MAL API Config</a></li>
+                <li>Get AniList Client ID from: <a href="https://anilist.co/settings/developer" target="_blank">AniList Developer Settings</a></li>
+            </ul>
+            <p>Set <code>demo_mode: false</code> once configured for production use.</p>
+        </div>
+
+        <!-- Authentication Section -->
+        <section class="card auth-section">
+            <h2>Authentication Status</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <strong>MyAnimeList:</strong>
+                    <span id="malAuthStatus" class="auth-status not-authenticated">✗ Not authenticated</span>
+                    <button class="btn btn-auth" onclick="authenticateMAL()">Authenticate MAL</button>
+                </div>
+                <div>
+                    <strong>AniList:</strong>
+                    <span id="anilistAuthStatus" class="auth-status not-authenticated">✗ Not authenticated</span>
+                    <button class="btn btn-auth" onclick="authenticateAniList()">Authenticate AniList</button>
+                </div>
+            </div>
+        </section>
 
         <!-- User Input Section -->
         <section class="card input-section">
@@ -343,6 +425,18 @@
                     </button>
                     <p>Upload your anime/manga list in JSON format</p>
                     <div id="fileName"></div>
+                </div>
+            </div>
+
+            <!-- JSON Username Input (Initially Hidden) -->
+            <div id="jsonUsernameContainer" style="display: none;">
+                <div class="form-group">
+                    <label for="jsonUsername" class="form-label">Target Username</label>
+                    <input type="text" id="jsonUsername" class="form-control" 
+                           placeholder="Enter username for the target platform">
+                    <small style="color: rgba(255, 255, 255, 0.7); margin-top: 5px; display: block;">
+                        This is the username on the target platform where you want to sync the JSON data.
+                    </small>
                 </div>
             </div>
         </section>
@@ -398,6 +492,6 @@
         </section>
     </div>
 
-    <script src="app.js"></script>
+    <script src="enhanced_app.js"></script>
 </body>
 </html>
