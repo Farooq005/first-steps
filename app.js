@@ -396,8 +396,8 @@ async function fetchDataFromAccounts() {
 
 function isProperlyAuthenticated() {
     // Check if we have valid credentials for production use
-    return (CONFIG.mal.client_id !== 'YOUR_MAL_CLIENT_ID_HERE' && 
-            CONFIG.anilist.client_id !== 'YOUR_ANILIST_CLIENT_ID_HERE');
+    return (CONFIG.mal.client_id !== '7d40aab44a745bbefc83c9df14413f86' && 
+            CONFIG.anilist.client_id !== '29038');
 }
 
 async function fetchMockData(malUsername, anilistUsername) {
