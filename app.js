@@ -4,7 +4,7 @@ const CONFIG = {
     anilist_api: 'https://graphql.anilist.co',
     mal_api: 'https://api.myanimelist.net/v2',
     // For demo purposes - in production, these should be environment variables
-    demo_mode: true // Set to false for production
+    demo_mode: false // Set to false for production
 };
 
 // Application state
