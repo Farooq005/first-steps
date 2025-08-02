@@ -1,0 +1,38 @@
+{
+  "name": "anime-tracker-sync",
+  "version": "1.0.0",
+  "description": "Synchronize anime and manga watchlists between MyAnimeList and AniList",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "live-server --port=8000",
+    "build": "echo 'No build step required for static HTML app'",
+    "test": "echo 'Tests coming soon'",
+    "deploy": "gh-pages -d ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/anime-tracker-sync.git"
+  },
+  "keywords": [
+    "anime",
+    "manga",
+    "myanimelist",
+    "anilist",
+    "sync",
+    "tracker",
+    "javascript",
+    "html",
+    "css"
+  ],
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yourusername/anime-tracker-sync/issues"
+  },
+  "homepage": "https://yourusername.github.io/anime-tracker-sync",
+  "devDependencies": {
+    "gh-pages": "^4.0.0",
+    "live-server": "^1.2.2"
+  }
+}
