@@ -12,12 +12,12 @@ const CONFIG = {
 
     // OAuth2 credentials - Replace with your actual values
     mal: {
-        client_id: 'YOUR_MAL_CLIENT_ID_HERE', // Replace with your MAL client ID
+        client_id: '7d40aab44a745bbefc83c9df14413f86', // Replace with your MAL client ID
         redirect_uri: window.location.origin + '/auth-callback.html'
     },
 
     anilist: {
-        client_id: 'YOUR_ANILIST_CLIENT_ID_HERE', // Replace with your AniList client ID
+        client_id: '29038', // Replace with your AniList client ID
         redirect_uri: window.location.origin + '/auth-callback.html'
     },
 
