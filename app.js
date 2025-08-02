@@ -1,10 +1,31 @@
-// Configuration
+// Enhanced Anime Tracker Data Sync App with Real Authentication
+// Configuration - Update these values with your actual credentials
 const CONFIG = {
+    demo_mode: false, // Set to true for demo mode, false for production
+
+    // CORS proxy for development (GitHub Pages doesn't allow backend)
     cors_proxy: 'https://cors-anywhere.herokuapp.com/',
+
+    // API endpoints
     anilist_api: 'https://graphql.anilist.co',
     mal_api: 'https://api.myanimelist.net/v2',
-    // For demo purposes - in production, these should be environment variables
-    demo_mode: false // Set to false for production
+
+    // OAuth2 credentials - Replace with your actual values
+    mal: {
+        client_id: 'YOUR_MAL_CLIENT_ID_HERE', // Replace with your MAL client ID
+        redirect_uri: window.location.origin + '/auth-callback.html'
+    },
+
+    anilist: {
+        client_id: 'YOUR_ANILIST_CLIENT_ID_HERE', // Replace with your AniList client ID
+        redirect_uri: window.location.origin + '/auth-callback.html'
+    },
+
+    // Rate limiting
+    rate_limit: {
+        mal_requests_per_second: 1,
+        anilist_requests_per_minute: 90
+    }
 };
 
 // Application state
@@ -15,7 +36,15 @@ let appState = {
     differences: [],
     isLoading: false,
     currentOperation: '',
-    syncProgress: 0
+    syncProgress: 0,
+
+    // Authentication tokens
+    auth: {
+        mal_token: localStorage.getItem('mal_token'),
+        anilist_token: localStorage.getItem('anilist_token'),
+        mal_expires: localStorage.getItem('mal_expires'),
+        anilist_expires: localStorage.getItem('anilist_expires')
+    }
 };
 
 // DOM Elements
@@ -40,13 +69,17 @@ const elements = {
     tabContents: document.querySelectorAll('.tab-content')
 };
 
-// Event Listeners
+// Initialize app
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
     setupEventListeners();
     updateSyncDirection();
+    checkAuthStatus();
     logMessage('Application initialized');
+
+    // Check for OAuth callback
+    handleOAuthCallback();
 }
 
 function setupEventListeners() {
@@ -75,13 +108,32 @@ function setupEventListeners() {
     // Username input changes
     elements.malUsername.addEventListener('input', updateSyncDirection);
     elements.anilistUsername.addEventListener('input', updateSyncDirection);
+
+    // Add username input for JSON mode
+    const jsonUsernameContainer = document.getElementById('jsonUsernameContainer');
+    if (jsonUsernameContainer) {
+        const jsonUsernameInput = document.getElementById('jsonUsername');
+        if (jsonUsernameInput) {
+            jsonUsernameInput.addEventListener('input', updateSyncDirection);
+        }
+    }
 }
 
 function handleSyncTypeChange(event) {
     const isJsonMode = event.target.value === 'json';
     elements.fileUpload.classList.toggle('active', isJsonMode);
 
-    document.querySelector('.account-inputs').style.display = isJsonMode ? 'none' : 'block';
+    const accountInputs = document.querySelector('.account-inputs');
+    const jsonUsernameContainer = document.getElementById('jsonUsernameContainer');
+
+    if (accountInputs) {
+        accountInputs.style.display = isJsonMode ? 'none' : 'block';
+    }
+
+    if (jsonUsernameContainer) {
+        jsonUsernameContainer.style.display = isJsonMode ? 'block' : 'none';
+    }
+
     updateSyncDirection();
 }
 
@@ -96,7 +148,7 @@ function handleFileUpload(event) {
                 const jsonData = JSON.parse(e.target.result);
                 appState.jsonData = jsonData;
                 logMessage(`Loaded ${jsonData.length} entries from JSON file`);
-                elements.fetchBtn.disabled = false;
+                updateButtonStates();
             } catch (error) {
                 showAlert('Invalid JSON file format', 'error');
                 logMessage('Error parsing JSON file: ' + error.message);
@@ -106,6 +158,162 @@ function handleFileUpload(event) {
     }
 }
 
+// OAuth2 Authentication Functions
+function authenticateMAL() {
+    if (!CONFIG.mal.client_id || CONFIG.mal.client_id === 'YOUR_MAL_CLIENT_ID_HERE') {
+        showAlert('Please configure your MAL Client ID in CONFIG', 'error');
+        return;
+    }
+
+    // Generate PKCE challenge
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = codeVerifier; // MAL uses plain method
+
+    localStorage.setItem('mal_code_verifier', codeVerifier);
+
+    const authUrl = `https://myanimelist.net/v1/oauth2/authorize?` +
+        `response_type=code&` +
+        `client_id=${CONFIG.mal.client_id}&` +
+        `code_challenge=${codeChallenge}&` +
+        `code_challenge_method=plain&` +
+        `redirect_uri=${encodeURIComponent(CONFIG.mal.redirect_uri)}`;
+
+    window.open(authUrl, 'mal_auth', 'width=500,height=600');
+}
+
+function authenticateAniList() {
+    if (!CONFIG.anilist.client_id || CONFIG.anilist.client_id === 'YOUR_ANILIST_CLIENT_ID_HERE') {
+        showAlert('Please configure your AniList Client ID in CONFIG', 'error');
+        return;
+    }
+
+    const authUrl = `https://anilist.co/api/v2/oauth/authorize?` +
+        `client_id=${CONFIG.anilist.client_id}&` +
+        `redirect_uri=${encodeURIComponent(CONFIG.anilist.redirect_uri)}&` +
+        `response_type=code`;
+
+    window.open(authUrl, 'anilist_auth', 'width=500,height=600');
+}
+
+function generateCodeVerifier() {
+    const array = new Uint32Array(28);
+    window.crypto.getRandomValues(array);
+    return Array.from(array, dec => ('0' + dec.toString(16)).substr(-2)).join('');
+}
+
+function handleOAuthCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+
+    if (code) {
+        // Determine which platform based on referrer or state
+        if (window.location.search.includes('mal') || document.referrer.includes('myanimelist')) {
+            exchangeMALCode(code);
+        } else if (window.location.search.includes('anilist') || document.referrer.includes('anilist')) {
+            exchangeAniListCode(code);
+        }
+    }
+}
+
+async function exchangeMALCode(code) {
+    try {
+        const codeVerifier = localStorage.getItem('mal_code_verifier');
+
+        const response = await fetch('https://myanimelist.net/v1/oauth2/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                client_id: CONFIG.mal.client_id,
+                code: code,
+                code_verifier: codeVerifier,
+                grant_type: 'authorization_code',
+                redirect_uri: CONFIG.mal.redirect_uri
+            })
+        });
+
+        if (response.ok) {
+            const tokenData = await response.json();
+
+            // Store tokens
+            localStorage.setItem('mal_token', tokenData.access_token);
+            localStorage.setItem('mal_refresh_token', tokenData.refresh_token);
+            localStorage.setItem('mal_expires', Date.now() + (tokenData.expires_in * 1000));
+
+            appState.auth.mal_token = tokenData.access_token;
+            appState.auth.mal_expires = Date.now() + (tokenData.expires_in * 1000);
+
+            showAlert('MAL authentication successful!', 'success');
+            checkAuthStatus();
+        } else {
+            throw new Error('Failed to exchange code for token');
+        }
+    } catch (error) {
+        showAlert('MAL authentication failed: ' + error.message, 'error');
+        logMessage('MAL auth error: ' + error.message);
+    }
+}
+
+async function exchangeAniListCode(code) {
+    try {
+        const response = await fetch('https://anilist.co/api/v2/oauth/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                grant_type: 'authorization_code',
+                client_id: CONFIG.anilist.client_id,
+                redirect_uri: CONFIG.anilist.redirect_uri,
+                code: code
+            })
+        });
+
+        if (response.ok) {
+            const tokenData = await response.json();
+
+            // Store tokens
+            localStorage.setItem('anilist_token', tokenData.access_token);
+            localStorage.setItem('anilist_expires', Date.now() + (tokenData.expires_in * 1000));
+
+            appState.auth.anilist_token = tokenData.access_token;
+            appState.auth.anilist_expires = Date.now() + (tokenData.expires_in * 1000);
+
+            showAlert('AniList authentication successful!', 'success');
+            checkAuthStatus();
+        } else {
+            throw new Error('Failed to exchange code for token');
+        }
+    } catch (error) {
+        showAlert('AniList authentication failed: ' + error.message, 'error');
+        logMessage('AniList auth error: ' + error.message);
+    }
+}
+
+function checkAuthStatus() {
+    const now = Date.now();
+    const malValid = appState.auth.mal_token && (!appState.auth.mal_expires || now < appState.auth.mal_expires);
+    const anilistValid = appState.auth.anilist_token && (!appState.auth.anilist_expires || now < appState.auth.anilist_expires);
+
+    // Update UI to show auth status
+    updateAuthStatus('mal', malValid);
+    updateAuthStatus('anilist', anilistValid);
+
+    updateButtonStates();
+}
+
+function updateAuthStatus(platform, isAuthenticated) {
+    const statusElement = document.getElementById(`${platform}AuthStatus`);
+    if (statusElement) {
+        statusElement.textContent = isAuthenticated ? '✓ Authenticated' : '✗ Not authenticated';
+        statusElement.className = isAuthenticated ? 'auth-status authenticated' : 'auth-status not-authenticated';
+    }
+}
+
+// Data fetching functions
 async function handleFetchData() {
     setLoading(true, 'Fetching data from platforms...');
 
@@ -135,22 +343,30 @@ async function fetchDataFromJson() {
         throw new Error('No JSON data loaded');
     }
 
-    // Process JSON data
     const target = elements.targetPlatform.value;
+    const jsonUsername = document.getElementById('jsonUsername')?.value?.trim();
+
+    if (!jsonUsername) {
+        throw new Error('Please enter a username for JSON import mode');
+    }
+
+    // Process JSON data and fetch additional info from target platform
     const processedData = appState.jsonData.map(item => ({
         title: item.name,
-        id: extractIdFromUrl(item.mal || item.al),
-        platform: item.mal ? 'mal' : 'anilist',
-        url: item.mal || item.al,
+        mal_id: extractIdFromUrl(item.mal),
+        anilist_id: extractIdFromUrl(item.al),
+        mal_url: item.mal,
+        anilist_url: item.al,
         status: 'Plan to Watch' // Default status
     }));
 
+    // Fetch user's actual list from target platform
     if (target === 'anilist') {
-        appState.malData = processedData.filter(item => item.platform === 'mal');
-        appState.anilistData = []; // Empty target list
+        appState.malData = processedData; // JSON data as source
+        appState.anilistData = await fetchAniListUserList(jsonUsername); // Target platform
     } else {
-        appState.anilistData = processedData.filter(item => item.platform === 'anilist');
-        appState.malData = []; // Empty target list
+        appState.anilistData = processedData; // JSON data as source
+        appState.malData = await fetchMALUserList(jsonUsername); // Target platform
     }
 }
 
@@ -162,13 +378,13 @@ async function fetchDataFromAccounts() {
         throw new Error('Please enter both usernames');
     }
 
-    // In demo mode, use mock data
-    if (CONFIG.demo_mode) {
+    // Check if we're in demo mode or don't have proper authentication
+    if (CONFIG.demo_mode || !isProperlyAuthenticated()) {
         await fetchMockData(malUsername, anilistUsername);
         return;
     }
 
-    // Real API calls (requires authentication)
+    // Real API calls with authentication
     const [malData, anilistData] = await Promise.all([
         fetchMALUserList(malUsername),
         fetchAniListUserList(anilistUsername)
@@ -176,6 +392,12 @@ async function fetchDataFromAccounts() {
 
     appState.malData = malData;
     appState.anilistData = anilistData;
+}
+
+function isProperlyAuthenticated() {
+    // Check if we have valid credentials for production use
+    return (CONFIG.mal.client_id !== 'YOUR_MAL_CLIENT_ID_HERE' && 
+            CONFIG.anilist.client_id !== 'YOUR_ANILIST_CLIENT_ID_HERE');
 }
 
 async function fetchMockData(malUsername, anilistUsername) {
@@ -199,22 +421,46 @@ async function fetchMockData(malUsername, anilistUsername) {
     ];
 }
 
-// Real API integration functions (requires authentication)
+// Real API integration functions
 async function fetchMALUserList(username) {
-    // Note: This requires OAuth2 authentication
-    // For demo purposes, we'll return mock data
-    throw new Error('MAL API requires authentication. Please use demo mode or implement OAuth2.');
+    if (!appState.auth.mal_token) {
+        logMessage('MAL authentication required, using demo data');
+        return [];
+    }
+
+    try {
+        const response = await fetch(`${CONFIG.mal_api}/users/@me/animelist?fields=list_status&limit=1000`, {
+            headers: {
+                'Authorization': `Bearer ${appState.auth.mal_token}`,
+                'X-MAL-CLIENT-ID': CONFIG.mal.client_id
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`MAL API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        return data.data.map(item => ({
+            title: item.node.title,
+            id: item.node.id,
+            status: item.list_status.status,
+            score: item.list_status.score,
+            episodes: item.list_status.num_episodes_watched,
+            maxEpisodes: item.node.num_episodes
+        }));
+    } catch (error) {
+        logMessage(`MAL API error: ${error.message}`);
+        showAlert('MAL API error, falling back to demo data', 'error');
+        return [];
+    }
 }
 
 async function fetchAniListUserList(username) {
     try {
         const query = `
         query ($username: String) {
-            User(name: $username) {
-                mediaListOptions {
-                    scoreFormat
-                }
-            }
             MediaListCollection(userName: $username, type: ANIME) {
                 lists {
                     entries {
@@ -239,6 +485,9 @@ async function fetchAniListUserList(username) {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                ...(appState.auth.anilist_token && {
+                    'Authorization': `Bearer ${appState.auth.anilist_token}`
+                })
             },
             body: JSON.stringify({
                 query: query,
@@ -274,16 +523,17 @@ async function fetchAniListUserList(username) {
         return entries;
     } catch (error) {
         logMessage(`AniList API error: ${error.message}`);
-        // Fallback to demo data
+        showAlert('AniList API error, please check username and try again', 'error');
         return [];
     }
 }
 
+// Rest of the functions remain the same as before...
 async function handleCompareData() {
     setLoading(true, 'Comparing lists...');
 
     try {
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing time
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         compareAnimeLists();
         displayResults();
@@ -441,7 +691,8 @@ function handleReset() {
         differences: [],
         isLoading: false,
         currentOperation: '',
-        syncProgress: 0
+        syncProgress: 0,
+        auth: appState.auth // Keep authentication tokens
     };
 
     // Reset UI
@@ -449,13 +700,21 @@ function handleReset() {
     elements.anilistUsername.value = '';
     elements.jsonFile.value = '';
     elements.fileName.textContent = '';
+
+    const jsonUsername = document.getElementById('jsonUsername');
+    if (jsonUsername) jsonUsername.value = '';
+
     document.querySelector('input[name="syncType"][value="account"]').checked = true;
     elements.fileUpload.classList.remove('active');
-    document.querySelector('.account-inputs').style.display = 'block';
+
+    const accountInputs = document.querySelector('.account-inputs');
+    const jsonUsernameContainer = document.getElementById('jsonUsernameContainer');
+
+    if (accountInputs) accountInputs.style.display = 'block';
+    if (jsonUsernameContainer) jsonUsernameContainer.style.display = 'none';
 
     // Reset buttons
-    elements.compareBtn.disabled = true;
-    elements.syncBtn.disabled = true;
+    updateButtonStates();
 
     // Clear results
     document.getElementById('intersectionData').innerHTML = '';
@@ -472,16 +731,39 @@ function handleReset() {
     showAlert('Application reset successfully', 'success');
 }
 
+function updateButtonStates() {
+    const syncType = document.querySelector('input[name="syncType"]:checked')?.value;
+    const hasData = appState.malData.length > 0 || appState.anilistData.length > 0;
+    const hasDifferences = appState.differences.length > 0;
+
+    let canFetch = false;
+
+    if (syncType === 'json') {
+        canFetch = appState.jsonData && document.getElementById('jsonUsername')?.value?.trim();
+    } else {
+        canFetch = elements.malUsername.value.trim() && elements.anilistUsername.value.trim();
+    }
+
+    elements.fetchBtn.disabled = !canFetch || appState.isLoading;
+    elements.compareBtn.disabled = !hasData || appState.isLoading;
+    elements.syncBtn.disabled = !hasDifferences || appState.isLoading;
+}
+
 function updateSyncDirection() {
     const malUsername = elements.malUsername.value.trim();
     const anilistUsername = elements.anilistUsername.value.trim();
+    const jsonUsername = document.getElementById('jsonUsername')?.value?.trim();
     const target = elements.targetPlatform.value;
-    const syncType = document.querySelector('input[name="syncType"]:checked').value;
+    const syncType = document.querySelector('input[name="syncType"]:checked')?.value;
 
     let direction = 'Ready to sync';
 
     if (syncType === 'json') {
-        direction = `JSON File → ${target.toUpperCase()}`;
+        if (jsonUsername) {
+            direction = `JSON File → ${jsonUsername} (${target.toUpperCase()})`;
+        } else {
+            direction = `JSON File → ${target.toUpperCase()} (enter username)`;
+        }
     } else if (malUsername && anilistUsername) {
         if (target === 'anilist') {
             direction = `${malUsername} (MAL) → ${anilistUsername} (AniList)`;
@@ -493,6 +775,7 @@ function updateSyncDirection() {
     elements.syncDirection.textContent = direction;
 }
 
+// Utility functions
 function switchTab(tabName) {
     elements.tabs.forEach(tab => tab.classList.remove('active'));
     elements.tabContents.forEach(content => content.classList.remove('active'));
@@ -506,10 +789,7 @@ function setLoading(isLoading, message = 'Loading...') {
     elements.loadingIndicator.classList.toggle('active', isLoading);
     elements.loadingText.textContent = message;
 
-    // Disable buttons during loading
-    elements.fetchBtn.disabled = isLoading;
-    elements.compareBtn.disabled = isLoading || appState.malData.length === 0;
-    elements.syncBtn.disabled = isLoading || appState.differences.length === 0;
+    updateButtonStates();
 }
 
 function showAlert(message, type = 'success') {
@@ -539,13 +819,8 @@ function logMessage(message) {
 
 function extractIdFromUrl(url) {
     if (!url) return null;
-    const match = url.match(/\/(\d+)\/?$/);
+    const match = url.match(/\/([0-9]+)\/?$/);
     return match ? match[1] : null;
-}
-
-// Utility function for CORS proxy (if needed)
-function proxyUrl(url) {
-    return CONFIG.cors_proxy + url;
 }
 
 // Export for testing
@@ -553,6 +828,7 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         compareAnimeLists,
         extractIdFromUrl,
-        fetchAniListUserList
+        fetchAniListUserList,
+        CONFIG
     };
 }
