@@ -357,7 +357,20 @@ class JsonImporter {
                         📖 Show Sample JSON Format
                     </button>
                     <div class="sample-content" id="sample-content">
-                        <div class="json-preview">
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: #4facfe; margin-bottom: 10px;">Format 1: URL-Based (Recommended)</h4>
+                            <div class="json-preview">
+[{"name":"Attack on Titan","mal":"https://myanimelist.net/manga/23390/","al":"https://anilist.co/manga/53390/"},{"name":"Death Note","mal":"https://myanimelist.net/manga/21/","al":""}]
+                            </div>
+                            <p style="margin-top: 10px; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
+                                <strong>URL Format:</strong> Uses direct MAL and AniList URLs for precise matching. 
+                                Empty strings ("") indicate the item is missing from that platform.
+                            </p>
+                        </div>
+
+                        <div>
+                            <h4 style="color: #4facfe; margin-bottom: 10px;">Format 2: Metadata-Based</h4>
+                            <div class="json-preview">
 [
   {
     "title": "Attack on Titan",
@@ -368,20 +381,14 @@ class JsonImporter {
     "start_date": "2023-01-01",
     "finish_date": "2023-02-15",
     "notes": "Amazing series!"
-  },
-  {
-    "title": "Your Name",
-    "status": "plan_to_watch",
-    "score": 0,
-    "progress": 0,
-    "total_episodes": 1
   }
 ]
+                            </div>
+                            <p style="margin-top: 10px; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
+                                <strong>Metadata Format:</strong> Flexible field names supported - 
+                                'name' instead of 'title', 'my_score' instead of 'score', etc.
+                            </p>
                         </div>
-                        <p style="margin-top: 10px; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
-                            <strong>Note:</strong> The format is flexible - you can use different field names like 
-                            'name' instead of 'title', 'my_score' instead of 'score', etc.
-                        </p>
                     </div>
                 </div>
             </div>
@@ -569,14 +576,56 @@ class JsonImporter {
         totalItems = jsonData.length;
         info.push(`Found ${totalItems} items in the file`);
 
-        // Check each item
-        jsonData.forEach((item, index) => {
-            if (this.hasRequiredFields(item)) {
-                validItems++;
-            } else {
-                warnings.push(`Item ${index + 1}: Missing required fields (title)`);
+        // Detect format type
+        const sampleItem = jsonData[0] || {};
+        const isUrlFormat = sampleItem.mal || sampleItem.al;
+        
+        if (isUrlFormat) {
+            info.push('Detected URL-based format (mal/al fields)');
+            
+            // Validate URL format
+            let itemsWithUrls = 0;
+            let itemsWithMalUrls = 0;
+            let itemsWithAnilistUrls = 0;
+            
+            jsonData.forEach((item, index) => {
+                const hasName = item.name || item.title;
+                const hasMalUrl = item.mal && item.mal.trim() !== '';
+                const hasAnilistUrl = item.al && item.al.trim() !== '';
+                
+                if (hasName && (hasMalUrl || hasAnilistUrl)) {
+                    validItems++;
+                    itemsWithUrls++;
+                    
+                    if (hasMalUrl) itemsWithMalUrls++;
+                    if (hasAnilistUrl) itemsWithAnilistUrls++;
+                } else {
+                    warnings.push(`Item ${index + 1}: Missing name or both URLs are empty`);
+                }
+            });
+            
+            info.push(`${itemsWithMalUrls} items have MAL URLs`);
+            info.push(`${itemsWithAnilistUrls} items have AniList URLs`);
+            info.push(`${itemsWithUrls - itemsWithMalUrls - itemsWithAnilistUrls + Math.min(itemsWithMalUrls, itemsWithAnilistUrls)} items missing from one platform`);
+            
+        } else {
+            info.push('Detected metadata-based format');
+            
+            // Check each item for metadata format
+            jsonData.forEach((item, index) => {
+                if (this.hasRequiredFields(item)) {
+                    validItems++;
+                } else {
+                    warnings.push(`Item ${index + 1}: Missing required fields (title)`);
+                }
+            });
+            
+            // Detect common field names
+            const fieldInfo = this.detectFieldMappings(sampleItem);
+            if (fieldInfo.length > 0) {
+                info.push('Detected fields: ' + fieldInfo.join(', '));
             }
-        });
+        }
 
         info.push(`${validItems} items have valid format`);
         
@@ -584,18 +633,12 @@ class JsonImporter {
             warnings.push(`${totalItems - validItems} items may have issues`);
         }
 
-        // Detect common field names
-        const sampleItem = jsonData[0] || {};
-        const fieldInfo = this.detectFieldMappings(sampleItem);
-        if (fieldInfo.length > 0) {
-            info.push('Detected fields: ' + fieldInfo.join(', '));
-        }
-
         return {
             valid: validItems > 0,
             info,
             warnings,
-            stats: { total: totalItems, valid: validItems }
+            stats: { total: totalItems, valid: validItems },
+            isUrlFormat: isUrlFormat
         };
     }
 
@@ -716,6 +759,128 @@ class JsonImporter {
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Process JSON import data
+    processJsonImport(jsonData, targetPlatform, dataType = 'anime') {
+        if (!jsonData || !Array.isArray(jsonData)) {
+            throw new Error('Invalid JSON data format. Expected an array of items.');
+        }
+
+        this.emitProgress({
+            type: 'status',
+            message: 'Processing JSON import data...',
+            progress: 0
+        });
+
+        // Check if this is URL-based format or metadata format
+        const sampleItem = jsonData[0] || {};
+        const isUrlFormat = sampleItem.mal || sampleItem.al;
+
+        let normalizedData;
+
+        if (isUrlFormat) {
+            // Handle URL-based format: [{"name":"Title","mal":"url","al":"url"}]
+            normalizedData = this.processUrlBasedFormat(jsonData, dataType);
+        } else {
+            // Handle metadata format: [{"title":"Title","status":"completed","score":9}]
+            normalizedData = this.processMetadataFormat(jsonData);
+        }
+
+        this.emitProgress({
+            type: 'status',
+            message: `Processed ${normalizedData.length} items from JSON`,
+            progress: 100
+        });
+
+        return normalizedData;
+    }
+
+    // Process URL-based JSON format
+    processUrlBasedFormat(jsonData, dataType) {
+        return jsonData.map((item, index) => {
+            const title = item.name || item.title || `Untitled ${index + 1}`;
+            const malUrl = item.mal || '';
+            const alUrl = item.al || '';
+
+            // Extract IDs from URLs
+            const malId = this.extractIdFromUrl(malUrl, 'mal');
+            const alId = this.extractIdFromUrl(alUrl, 'anilist');
+
+            // Determine which platform this item is missing from
+            const missingFromAniList = !alUrl || alUrl.trim() === '';
+            const missingFromMAL = !malUrl || malUrl.trim() === '';
+
+            return {
+                id: malId || alId || Math.random(),
+                title: title,
+                status: 'plan_to_watch', // Default status for URL imports
+                score: 0,
+                progress: 0,
+                progress_chapters: 0,
+                progress_volumes: 0,
+                total_episodes: 0,
+                total_chapters: 0,
+                total_volumes: 0,
+                start_date: null,
+                finish_date: null,
+                notes: '',
+                tags: [],
+                platform: 'json',
+                // Additional metadata for URL format
+                malUrl: malUrl,
+                alUrl: alUrl,
+                malId: malId,
+                alId: alId,
+                missingFromAniList: missingFromAniList,
+                missingFromMAL: missingFromMAL,
+                dataType: dataType
+            };
+        });
+    }
+
+    // Process metadata-based JSON format (original implementation)
+    processMetadataFormat(jsonData) {
+        return jsonData.map(item => {
+            return {
+                id: item.id || item.mal_id || item.anilist_id || Math.random(),
+                title: item.title || item.name || item.series_title,
+                status: item.status || item.my_status || 'plan_to_watch',
+                score: item.score || item.my_score || 0,
+                progress: item.progress || item.watched_episodes || item.read_chapters || 0,
+                progress_chapters: item.progress_chapters || item.read_chapters || 0,
+                progress_volumes: item.progress_volumes || item.read_volumes || 0,
+                total_episodes: item.total_episodes || item.num_episodes || 0,
+                total_chapters: item.total_chapters || item.num_chapters || 0,
+                total_volumes: item.total_volumes || item.num_volumes || 0,
+                start_date: item.start_date || item.started_date,
+                finish_date: item.finish_date || item.finished_date,
+                notes: item.notes || item.comments || '',
+                tags: item.tags || [],
+                platform: 'json'
+            };
+        });
+    }
+
+    // Extract ID from MAL or AniList URL
+    extractIdFromUrl(url, platform) {
+        if (!url || typeof url !== 'string') return null;
+
+        try {
+            if (platform === 'mal') {
+                // MAL URLs: https://myanimelist.net/anime/12345/ or https://myanimelist.net/manga/12345/
+                const malMatch = url.match(/myanimelist\.net\/(anime|manga)\/(\d+)/);
+                return malMatch ? parseInt(malMatch[2]) : null;
+            } else if (platform === 'anilist') {
+                // AniList URLs: https://anilist.co/anime/12345/ or https://anilist.co/manga/12345/
+                const alMatch = url.match(/anilist\.co\/(anime|manga)\/(\d+)/);
+                return alMatch ? parseInt(alMatch[2]) : null;
+            }
+        } catch (error) {
+            console.warn(`Failed to extract ID from URL: ${url}`, error);
+        }
+
+        return null;
     }
 }
 

@@ -130,8 +130,20 @@ this.clientId = 'YOUR_ANILIST_CLIENT_ID';
 6. **Select Target**: Choose where to sync the data
 7. **Start Sync**: Begin synchronization
 
-### Supported JSON Format
+### Supported JSON Formats
 
+#### Format 1: URL-Based (Recommended)
+```json
+[{"name":"Attack on Titan","mal":"https://myanimelist.net/manga/23390/","al":"https://anilist.co/manga/53390/"},{"name":"Death Note","mal":"https://myanimelist.net/manga/21/","al":""}]
+```
+
+**Advantages**:
+- **Precise Matching**: Uses exact IDs from URLs for 100% accuracy
+- **Smart Filtering**: Automatically identifies items missing from each platform
+- **No Search Required**: Direct ID mapping eliminates search failures
+- **Supports Missing Items**: Empty URL strings ("") indicate missing items
+
+#### Format 2: Metadata-Based
 ```json
 [
   {

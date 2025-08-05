@@ -53,6 +53,17 @@ class MALApiService {
     async exchangeCodeForToken(code) {
         const codeVerifier = localStorage.getItem('mal_code_verifier');
         
+        console.log('MAL OAuth: Exchanging code for token...', {
+            clientId: this.clientId,
+            redirectUri: this.redirectUri,
+            hasCodeVerifier: !!codeVerifier,
+            codeLength: code?.length
+        });
+        
+        if (!codeVerifier) {
+            throw new Error('Code verifier not found. Please try authenticating again.');
+        }
+        
         const response = await fetch('https://myanimelist.net/v1/oauth2/token', {
             method: 'POST',
             headers: {
@@ -68,10 +79,17 @@ class MALApiService {
         });
 
         if (!response.ok) {
-            throw new Error(`Failed to exchange code for token: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('MAL OAuth Error:', {
+                status: response.status,
+                statusText: response.statusText,
+                errorText: errorText
+            });
+            throw new Error(`Failed to exchange code for token: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
         const tokenData = await response.json();
+        console.log('MAL OAuth: Token exchange successful');
         this.storeTokens(tokenData);
         return tokenData;
     }
