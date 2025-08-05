@@ -74,95 +74,50 @@ class MALApiService {
             throw new Error('Code verifier not found. Please try authenticating again.');
         }
 
-        // Try direct request first (for debugging)
+        // Use serverless OAuth proxy to bypass CORS
+        const proxyUrl = 'https://your-oauth-proxy.netlify.app/.netlify/functions/oauth-proxy';
+        
         try {
-            console.log('Attempting direct request to MAL...');
-            const directResponse = await fetch('https://myanimelist.net/v1/oauth2/token', {
+            console.log('Using OAuth proxy for token exchange...');
+            
+            const response = await fetch(proxyUrl, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
+                    'Content-Type': 'application/json'
                 },
-                body: new URLSearchParams({
-                    client_id: this.clientId,
+                body: JSON.stringify({
+                    platform: 'mal',
                     code: code,
-                    code_verifier: codeVerifier,
-                    grant_type: 'authorization_code',
-                    redirect_uri: this.redirectUri
+                    clientId: this.clientId,
+                    redirectUri: this.redirectUri,
+                    codeVerifier: codeVerifier
                 })
             });
-            
-            if (directResponse.ok) {
-                const tokenData = await directResponse.json();
-                console.log('MAL OAuth: Direct token exchange successful');
-                this.storeTokens(tokenData);
-                return tokenData;
-            } else {
-                console.log('Direct request failed, trying CORS proxies...');
-            }
-        } catch (error) {
-            console.log('Direct request failed with CORS error, trying proxies...', error);
-        }
 
-        // Multiple CORS proxy options for reliability
-        const proxyOptions = [
-            'https://corsproxy.io/?',
-            'https://api.allorigins.win/raw?url=',
-            'https://thingproxy.freeboard.io/fetch/',
-            'https://cors-anywhere.herokuapp.com/'
-        ];
-
-        let lastError = null;
-        
-        for (const proxy of proxyOptions) {
-            try {
-                console.log(`Trying proxy: ${proxy}`);
-                const tokenUrl = proxy + 'https://myanimelist.net/v1/oauth2/token';
-                console.log(`Full URL: ${tokenUrl}`);
-                
-                const response = await fetch(tokenUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Origin': window.location.origin,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: new URLSearchParams({
-                        client_id: this.clientId,
-                        code: code,
-                        code_verifier: codeVerifier,
-                        grant_type: 'authorization_code',
-                        redirect_uri: this.redirectUri
-                    })
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('OAuth Proxy Error:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorText: errorText
                 });
-
-                console.log(`Proxy response status: ${response.status}`);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.warn(`MAL OAuth Error with proxy ${proxy}:`, {
-                        status: response.status,
-                        statusText: response.statusText,
-                        errorText: errorText
-                    });
-                    lastError = new Error(`Failed to exchange code for token: ${response.status} ${response.statusText} - ${errorText}`);
-                    continue; // Try next proxy
-                }
-
-                const tokenData = await response.json();
-                console.log('MAL OAuth: Token exchange successful with proxy');
-                this.storeTokens(tokenData);
-                return tokenData;
-                
-            } catch (error) {
-                console.warn(`MAL OAuth Error with proxy ${proxy}:`, error);
-                lastError = error;
-                continue; // Try next proxy
+                throw new Error(`OAuth proxy failed: ${response.status} ${response.statusText}`);
             }
-        }
 
-        // If all proxies failed
-        console.error('All CORS proxies failed');
-        throw lastError || new Error('All CORS proxies failed. Please try again later.');
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(`OAuth failed: ${result.error}`);
+            }
+
+            console.log('MAL OAuth: Token exchange successful via proxy');
+            this.storeTokens(result.data);
+            return result.data;
+            
+        } catch (error) {
+            console.error('MAL OAuth Error:', error);
+            throw new Error(`OAuth token exchange failed: ${error.message}`);
+        }
     }
 
     // Store tokens securely
