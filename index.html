@@ -562,6 +562,14 @@
     <script src="src/components/JsonImporter.js"></script>
 
     <script>
+        // Debug script loading
+        console.log('Scripts loaded, checking for classes...');
+        console.log('MALApiService available:', typeof window.MALApiService);
+        console.log('AniListApiService available:', typeof window.AniListApiService);
+        console.log('SyncService available:', typeof window.SyncService);
+        console.log('ProgressTracker available:', typeof window.ProgressTracker);
+        console.log('JsonImporter available:', typeof window.JsonImporter);
+
         // Global application state
         let app = {
             syncService: null,
@@ -577,8 +585,27 @@
             initializeApp();
         });
 
-        function initializeApp() {
+        async function initializeApp() {
             try {
+                console.log('Starting application initialization...');
+                
+                // Check if all required classes are available
+                if (typeof window.MALApiService === 'undefined') {
+                    throw new Error('MALApiService not loaded');
+                }
+                if (typeof window.AniListApiService === 'undefined') {
+                    throw new Error('AniListApiService not loaded');
+                }
+                if (typeof window.SyncService === 'undefined') {
+                    throw new Error('SyncService not loaded');
+                }
+                if (typeof window.ProgressTracker === 'undefined') {
+                    throw new Error('ProgressTracker not loaded');
+                }
+                if (typeof window.JsonImporter === 'undefined') {
+                    throw new Error('JsonImporter not loaded');
+                }
+                
                 // Initialize services
                 app.syncService = new SyncService();
                 app.progressTracker = new ProgressTracker('progress-tracker');
@@ -606,6 +633,16 @@
             } catch (error) {
                 console.error('Failed to initialize application:', error);
                 showAlert('error', `Failed to initialize: ${error.message}`);
+                
+                // Show error in UI
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'background: #ff4d4f; color: white; padding: 20px; margin: 20px; border-radius: 8px; text-align: center;';
+                errorDiv.innerHTML = `
+                    <h3>🚨 Application Failed to Load</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>Please check the browser console for more details and refresh the page.</p>
+                `;
+                document.body.insertBefore(errorDiv, document.body.firstChild);
             }
         }
 

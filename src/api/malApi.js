@@ -5,11 +5,21 @@ class MALApiService {
     constructor() {
         this.baseUrl = 'https://api.myanimelist.net/v2';
         this.clientId = '7d40aab44a745bbefc83c9df14413f86'; // Replace with your actual client ID
-        this.redirectUri = window.location.origin + window.location.pathname;
+        // Use full URL for GitHub Pages compatibility
+        this.redirectUri = window.location.href.split('?')[0]; // Remove query parameters
         this.rateLimit = {
             requestsPerSecond: 1,
             lastRequestTime: 0
         };
+        
+        // Debug OAuth configuration
+        console.log('MAL OAuth Configuration:', {
+            clientId: this.clientId,
+            redirectUri: this.redirectUri,
+            currentUrl: window.location.href,
+            origin: window.location.origin,
+            pathname: window.location.pathname
+        });
     }
 
     // OAuth2 Authentication

@@ -4,21 +4,31 @@
 class AniListApiService {
     constructor() {
         this.baseUrl = 'https://graphql.anilist.co';
-        this.authUrl = 'https://anilist.co/api/v2/oauth/authorize';
         this.tokenUrl = 'https://anilist.co/api/v2/oauth/token';
         this.clientId = '29038'; // Replace with your actual client ID
-        this.clientSecret = 'EESvhR7XUzdpWNhWBRYPWGJjIGcP9qW04vUhT9QW'; // Keep this secure
-        this.redirectUri = window.location.origin + window.location.pathname;
+        this.clientSecret = 'your_client_secret'; // Replace with your actual client secret
+        // Use full URL for GitHub Pages compatibility
+        this.redirectUri = window.location.href.split('?')[0]; // Remove query parameters
+        
         this.rateLimit = {
             requestsPerMinute: 90,
             requests: [],
-            lastCleanup: Date.now()
+            lastCleanup: 0
         };
+        
+        // Debug OAuth configuration
+        console.log('AniList OAuth Configuration:', {
+            clientId: this.clientId,
+            redirectUri: this.redirectUri,
+            currentUrl: window.location.href,
+            origin: window.location.origin,
+            pathname: window.location.pathname
+        });
     }
 
     // OAuth2 Authentication
     async authenticate() {
-        const authUrl = `${this.authUrl}?` +
+        const authUrl = `https://anilist.co/api/v2/oauth/authorize?` +
             `client_id=${this.clientId}&` +
             `redirect_uri=${encodeURIComponent(this.redirectUri)}&` +
             `response_type=code`;
