@@ -44,18 +44,51 @@ class AniListApiService {
             codeLength: code?.length
         });
         
+        // Try direct request first (for debugging)
+        try {
+            console.log('Attempting direct request to AniList...');
+            const directResponse = await fetch(this.tokenUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    grant_type: 'authorization_code',
+                    client_id: this.clientId,
+                    client_secret: this.clientSecret,
+                    redirect_uri: this.redirectUri,
+                    code: code
+                })
+            });
+            
+            if (directResponse.ok) {
+                const tokenData = await directResponse.json();
+                console.log('AniList OAuth: Direct token exchange successful');
+                this.storeTokens(tokenData);
+                return tokenData;
+            } else {
+                console.log('Direct request failed, trying CORS proxies...');
+            }
+        } catch (error) {
+            console.log('Direct request failed with CORS error, trying proxies...', error);
+        }
+
         // Multiple CORS proxy options for reliability
         const proxyOptions = [
-            'https://cors-anywhere.herokuapp.com/',
+            'https://corsproxy.io/?',
             'https://api.allorigins.win/raw?url=',
-            'https://thingproxy.freeboard.io/fetch/'
+            'https://thingproxy.freeboard.io/fetch/',
+            'https://cors-anywhere.herokuapp.com/'
         ];
 
         let lastError = null;
         
         for (const proxy of proxyOptions) {
             try {
+                console.log(`Trying proxy: ${proxy}`);
                 const tokenUrl = proxy + this.tokenUrl;
+                console.log(`Full URL: ${tokenUrl}`);
                 
                 const response = await fetch(tokenUrl, {
                     method: 'POST',
@@ -74,6 +107,8 @@ class AniListApiService {
                     })
                 });
 
+                console.log(`Proxy response status: ${response.status}`);
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.warn(`AniList OAuth Error with proxy ${proxy}:`, {
@@ -86,7 +121,7 @@ class AniListApiService {
                 }
 
                 const tokenData = await response.json();
-                console.log('AniList OAuth: Token exchange successful');
+                console.log('AniList OAuth: Token exchange successful with proxy');
                 this.storeTokens(tokenData);
                 return tokenData;
                 
@@ -98,6 +133,7 @@ class AniListApiService {
         }
 
         // If all proxies failed
+        console.error('All CORS proxies failed');
         throw lastError || new Error('All CORS proxies failed. Please try again later.');
     }
 

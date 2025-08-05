@@ -74,18 +74,50 @@ class MALApiService {
             throw new Error('Code verifier not found. Please try authenticating again.');
         }
 
+        // Try direct request first (for debugging)
+        try {
+            console.log('Attempting direct request to MAL...');
+            const directResponse = await fetch('https://myanimelist.net/v1/oauth2/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    client_id: this.clientId,
+                    code: code,
+                    code_verifier: codeVerifier,
+                    grant_type: 'authorization_code',
+                    redirect_uri: this.redirectUri
+                })
+            });
+            
+            if (directResponse.ok) {
+                const tokenData = await directResponse.json();
+                console.log('MAL OAuth: Direct token exchange successful');
+                this.storeTokens(tokenData);
+                return tokenData;
+            } else {
+                console.log('Direct request failed, trying CORS proxies...');
+            }
+        } catch (error) {
+            console.log('Direct request failed with CORS error, trying proxies...', error);
+        }
+
         // Multiple CORS proxy options for reliability
         const proxyOptions = [
-            'https://cors-anywhere.herokuapp.com/',
+            'https://corsproxy.io/?',
             'https://api.allorigins.win/raw?url=',
-            'https://thingproxy.freeboard.io/fetch/'
+            'https://thingproxy.freeboard.io/fetch/',
+            'https://cors-anywhere.herokuapp.com/'
         ];
 
         let lastError = null;
         
         for (const proxy of proxyOptions) {
             try {
+                console.log(`Trying proxy: ${proxy}`);
                 const tokenUrl = proxy + 'https://myanimelist.net/v1/oauth2/token';
+                console.log(`Full URL: ${tokenUrl}`);
                 
                 const response = await fetch(tokenUrl, {
                     method: 'POST',
@@ -103,6 +135,8 @@ class MALApiService {
                     })
                 });
 
+                console.log(`Proxy response status: ${response.status}`);
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.warn(`MAL OAuth Error with proxy ${proxy}:`, {
@@ -115,7 +149,7 @@ class MALApiService {
                 }
 
                 const tokenData = await response.json();
-                console.log('MAL OAuth: Token exchange successful');
+                console.log('MAL OAuth: Token exchange successful with proxy');
                 this.storeTokens(tokenData);
                 return tokenData;
                 
@@ -127,6 +161,7 @@ class MALApiService {
         }
 
         // If all proxies failed
+        console.error('All CORS proxies failed');
         throw lastError || new Error('All CORS proxies failed. Please try again later.');
     }
 
