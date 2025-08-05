@@ -900,28 +900,68 @@
                     app.currentDataType
                 );
                 
-                // Process as if it's MAL data for comparison
-                app.comparisonResults = {
-                    malData: normalizedData,
-                    anilistData: [], // Empty for now
-                    intersection: [],
-                    differences: {
-                        malOnly: normalizedData,
-                        anilistOnly: []
-                    },
-                    stats: {
-                        malTotal: normalizedData.length,
-                        anilistTotal: 0,
-                        matches: 0,
-                        malOnlyCount: normalizedData.length,
-                        anilistOnlyCount: 0
-                    }
-                };
+                // Check if this is URL-based import for smarter handling
+                const isUrlImport = normalizedData.length > 0 && normalizedData[0].isUrlImport;
+                const targetPlatform = document.getElementById('sync-target').value;
+                
+                if (isUrlImport && targetPlatform) {
+                    // Filter items based on what's missing from target platform
+                    const itemsToSync = normalizedData.filter(item => {
+                        if (targetPlatform === 'anilist') {
+                            return item.missingFromAniList; // Items missing from AniList
+                        } else if (targetPlatform === 'mal') {
+                            return item.missingFromMAL; // Items missing from MAL
+                        }
+                        return true;
+                    });
+                    
+                    app.comparisonResults = {
+                        malData: targetPlatform === 'anilist' ? itemsToSync : [],
+                        anilistData: targetPlatform === 'mal' ? itemsToSync : [],
+                        intersection: [],
+                        differences: {
+                            malOnly: targetPlatform === 'anilist' ? itemsToSync : [],
+                            anilistOnly: targetPlatform === 'mal' ? itemsToSync : []
+                        },
+                        stats: {
+                            malTotal: targetPlatform === 'anilist' ? itemsToSync.length : 0,
+                            anilistTotal: targetPlatform === 'mal' ? itemsToSync.length : 0,
+                            matches: 0,
+                            malOnlyCount: targetPlatform === 'anilist' ? itemsToSync.length : 0,
+                            anilistOnlyCount: targetPlatform === 'mal' ? itemsToSync.length : 0
+                        },
+                        isUrlImport: true
+                    };
+                    
+                    showAlert('success', 
+                        `Successfully imported ${normalizedData.length} items from JSON file: ${data.filename}\n` +
+                        `Found ${itemsToSync.length} items missing from ${targetPlatform.toUpperCase()} ready to sync.`
+                    );
+                } else {
+                    // Regular metadata import - treat as source data
+                    app.comparisonResults = {
+                        malData: normalizedData,
+                        anilistData: [],
+                        intersection: [],
+                        differences: {
+                            malOnly: normalizedData,
+                            anilistOnly: []
+                        },
+                        stats: {
+                            malTotal: normalizedData.length,
+                            anilistTotal: 0,
+                            matches: 0,
+                            malOnlyCount: normalizedData.length,
+                            anilistOnlyCount: 0
+                        },
+                        isUrlImport: false
+                    };
+                    
+                    showAlert('success', `Successfully imported ${normalizedData.length} items from JSON file: ${data.filename}`);
+                }
                 
                 displayResults(app.comparisonResults);
                 validateForm();
-                
-                showAlert('success', `Successfully imported ${normalizedData.length} items from JSON file: ${data.filename}`);
                 
                 // Switch to main tab
                 switchTab('username-sync');
