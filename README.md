@@ -1,32 +1,56 @@
-# Anime Tracker Data Sync App
+# 🚀 Anime Tracker Data Sync App
 
-A modern web application that synchronizes anime and manga watchlists between MyAnimeList (MAL) and AniList platforms.
+A comprehensive production-ready web application that synchronizes anime and manga watchlists between MyAnimeList (MAL) and AniList platforms with real API integration.
 
-![App Screenshot](https://via.placeholder.com/800x400?text=Anime+Tracker+Data+Sync+App)
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Status](https://img.shields.io/badge/status-production-brightgreen.svg)
 
-## 🚀 Features
+## ✨ Features
 
-- **Dual Platform Support**: Sync between MyAnimeList and AniList
-- **JSON Import**: Import anime/manga lists from JSON files
-- **Real-time Progress**: Visual feedback during sync operations
-- **Comparison Engine**: Find intersections and differences between lists
-- **Modern UI**: Clean, responsive design with dark theme
-- **Cross-Origin Support**: Handles CORS issues with proxy configuration
+### 🔄 **Dual Platform Sync**
+- **Real API Integration**: Uses MyAnimeList API v2 and AniList GraphQL API
+- **OAuth2 Authentication**: Secure authentication for both platforms
+- **Bidirectional Sync**: Sync missing items from MAL to AniList or vice versa
+- **Both Anime & Manga**: Support for both anime and manga lists
 
-## 🛠️ Technology Stack
+### 📁 **JSON Import/Export**
+- **Flexible Format Support**: Import from MAL exports, AniList exports, or custom JSON formats
+- **Drag & Drop Interface**: Easy file upload with validation
+- **Format Detection**: Automatic detection of common export formats
+- **Data Validation**: Real-time validation with detailed error reporting
 
-- **Frontend**: HTML5, CSS3, Vanilla JavaScript
-- **APIs**: MyAnimeList API v2, AniList GraphQL API
-- **Deployment**: GitHub Pages
-- **Authentication**: OAuth2 (for production use)
+### 🎯 **Smart Comparison Engine**
+- **Advanced Title Matching**: Uses Jaro-Winkler similarity algorithm for accurate matching
+- **Detailed Statistics**: Shows matches, differences, and platform-specific counts
+- **Preview Before Sync**: See exactly what will be synchronized
 
-## 📦 Quick Start
+### ⚡ **Real-time Progress Tracking**
+- **Live Progress Bars**: Visual feedback during sync operations
+- **Detailed Activity Logs**: Step-by-step progress with timestamps
+- **Cancellable Operations**: Stop sync operations at any time
+- **Export Logs**: Save sync logs for troubleshooting
 
-### Option 1: GitHub Pages Deployment
+### 🛡️ **Production-Ready Features**
+- **Rate Limiting**: Respects API rate limits (MAL: 1 req/sec, AniList: 90 req/min)
+- **Error Handling**: Comprehensive error handling with user-friendly messages
+- **Retry Logic**: Automatic retry for failed requests
+- **Token Management**: Automatic token refresh and secure storage
+
+### 🎨 **Modern UI/UX**
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Dark Theme**: Beautiful dark theme with gradient accents
+- **Tabbed Interface**: Organized interface with Username Sync, JSON Import, and Settings
+- **Real-time Validation**: Instant feedback on form inputs
+- **Loading States**: Clear loading indicators for all operations
+
+## 🚀 Quick Start
+
+### Option 1: GitHub Pages (Recommended)
 
 1. **Fork this repository** to your GitHub account
 2. **Enable GitHub Pages**:
-   - Go to repository Settings → Pages
+   - Go to Settings → Pages
    - Select "Deploy from a branch"
    - Choose "main" branch and "/ (root)" folder
    - Click "Save"
@@ -40,229 +64,229 @@ A modern web application that synchronizes anime and manga watchlists between My
    cd anime-tracker-sync
    ```
 
-2. **Serve locally** (choose one method):
+2. **Serve locally**:
    ```bash
    # Using Python
    python -m http.server 8000
-
-   # Using Node.js (with live-server)
-   npx live-server
-
+   
+   # Using Node.js
+   npx http-server
+   
    # Using PHP
    php -S localhost:8000
    ```
 
-3. **Open in browser**: Navigate to `http://localhost:8000`
+3. **Access the app**: Open `http://localhost:8000` in your browser
 
-## 🔧 Configuration
+## 🔧 Setup & Configuration
 
-### For Production Use (Real API Integration)
+### 1. API Key Setup
 
-1. **MyAnimeList API Setup**:
-   - Register your app at [MAL API Config](https://myanimelist.net/apiconfig)
-   - Get your `client_id` and `client_secret`
-   - Set up OAuth2 redirect URI
+#### MyAnimeList API:
+1. Go to [MAL API Configuration](https://myanimelist.net/apiconfig)
+2. Create a new app
+3. Set the redirect URI to your app URL (e.g., `https://yourusername.github.io/anime-tracker-sync/`)
+4. Copy the Client ID and update it in `src/api/malApi.js`
 
-2. **AniList API Setup**:
-   - Create an app at [AniList Developer Settings](https://anilist.co/settings/developer)
-   - Configure redirect URI for your domain
+#### AniList API:
+1. Go to [AniList Developer Settings](https://anilist.co/settings/developer)
+2. Create a new client
+3. Set the redirect URI to your app URL
+4. Copy the Client ID and update it in `src/api/anilistApi.js`
 
-3. **Update Configuration**:
-   ```javascript
-   // In app.js, update CONFIG object
-   const CONFIG = {
-       demo_mode: false, // Set to false for production
-       mal_client_id: 'your_mal_client_id',
-       anilist_client_id: 'your_anilist_client_id',
-       redirect_uri: 'your_app_url/callback'
-   };
-   ```
+### 2. Update Configuration
 
-### Environment Variables (Optional)
+Edit the client IDs in the respective API files:
 
-Create a `.env` file for sensitive configuration:
-```env
-MAL_CLIENT_ID=your_mal_client_id
-MAL_CLIENT_SECRET=your_mal_client_secret
-ANILIST_CLIENT_ID=your_anilist_client_id
-ANILIST_CLIENT_SECRET=your_anilist_client_secret
+**`src/api/malApi.js`**:
+```javascript
+this.clientId = 'YOUR_MAL_CLIENT_ID';
 ```
 
-## 🚀 Deployment Guide
-
-### GitHub Pages (Recommended)
-
-1. **Create GitHub Repository**:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/yourusername/anime-tracker-sync.git
-   git push -u origin main
-   ```
-
-2. **Enable GitHub Pages**:
-   - Repository Settings → Pages
-   - Source: "Deploy from a branch"
-   - Branch: "main" / "(root)"
-   - Save changes
-
-3. **Custom Domain** (Optional):
-   - Add `CNAME` file with your domain
-   - Configure DNS settings
-
-### Alternative Deployment Options
-
-#### Netlify
-1. Connect your GitHub repository
-2. Build settings: 
-   - Build command: (leave empty)
-   - Publish directory: `/`
-3. Deploy
-
-#### Vercel
-1. Import GitHub repository
-2. Framework preset: "Other"
-3. Build command: (leave empty)
-4. Output directory: `./`
-5. Deploy
-
-#### Firebase Hosting
-```bash
-npm install -g firebase-tools
-firebase login
-firebase init hosting
-firebase deploy
+**`src/api/anilistApi.js`**:
+```javascript
+this.clientId = 'YOUR_ANILIST_CLIENT_ID';
 ```
 
-## 📱 Usage
+## 📖 Usage Guide
 
-### Account Sync Mode
+### Username-Based Sync
 
-1. **Enter Usernames**: Input your MAL and AniList usernames
-2. **Select Target**: Choose which platform to sync to
-3. **Fetch Data**: Click "Fetch Data" to retrieve lists
-4. **Compare**: Click "Compare Lists" to analyze differences
-5. **Sync**: Click "Start Sync" to transfer missing entries
+1. **Authenticate**: Click "Connect" for both MAL and AniList platforms
+2. **Enter Usernames**: Input MAL and AniList usernames
+3. **Select Data Type**: Choose between Anime or Manga
+4. **Choose Direction**: Select which platform to sync to
+5. **Fetch & Compare**: Click to retrieve and compare lists
+6. **Review Results**: Check the comparison statistics
+7. **Start Sync**: Begin the synchronization process
 
-### JSON Import Mode
+### JSON Import
 
-1. **Select JSON Import**: Switch to JSON file import mode
-2. **Upload File**: Choose your JSON file (see format below)
-3. **Select Target**: Choose destination platform
-4. **Process**: Follow the fetch → compare → sync workflow
+1. **Switch to JSON Import Tab**
+2. **Upload File**: Drag & drop or select a JSON file
+3. **Review Validation**: Check for any format issues
+4. **Process File**: Click "Process File" to import
+5. **Switch to Sync Tab**: Review imported data
+6. **Select Target**: Choose where to sync the data
+7. **Start Sync**: Begin synchronization
 
-#### JSON Format
+### Supported JSON Format
+
 ```json
 [
   {
-    "name": "Attack on Titan",
-    "mal": "https://myanimelist.net/anime/16498/",
-    "al": "https://anilist.co/anime/16498/"
-  },
-  {
-    "name": "Death Note", 
-    "mal": "https://myanimelist.net/anime/1535/",
-    "al": ""
+    "title": "Attack on Titan",
+    "status": "completed",
+    "score": 9,
+    "progress": 87,
+    "total_episodes": 87,
+    "start_date": "2023-01-15",
+    "finish_date": "2023-04-10",
+    "notes": "Amazing series!",
+    "tags": ["shounen", "action"]
   }
 ]
 ```
 
-## 🔒 Security & Authentication
+**Flexible Field Names**:
+- Title: `title`, `name`, `series_title`
+- Score: `score`, `my_score`, `rating`
+- Progress: `progress`, `watched_episodes`, `read_chapters`
+- Status: `status`, `my_status`
 
-### Production Security Checklist
+## 🏗️ Architecture
 
-- [ ] Implement proper OAuth2 flows
-- [ ] Store tokens securely (not in localStorage)
-- [ ] Use HTTPS for all API calls
-- [ ] Validate all user inputs
-- [ ] Implement rate limiting
-- [ ] Add CSRF protection
-- [ ] Sanitize API responses
-
-### OAuth2 Implementation
-
-```javascript
-// Example OAuth2 flow for MAL
-async function authenticateMAL() {
-    const authUrl = `https://myanimelist.net/v1/oauth2/authorize?` +
-        `response_type=code&` +
-        `client_id=${MAL_CLIENT_ID}&` +
-        `code_challenge=${codeChallenge}&` +
-        `code_challenge_method=plain&` +
-        `redirect_uri=${REDIRECT_URI}`;
-
-    window.location.href = authUrl;
-}
 ```
+anime-tracker-sync/
+├── index.html                 # Main application
+├── src/
+│   ├── api/
+│   │   ├── malApi.js         # MyAnimeList API service
+│   │   └── anilistApi.js     # AniList API service
+│   ├── services/
+│   │   └── syncService.js    # Core synchronization logic
+│   └── components/
+│       ├── ProgressTracker.js # Progress tracking component
+│       └── JsonImporter.js   # JSON import component
+├── sample-data.json          # Sample JSON for testing
+├── config.template.js        # Configuration template
+└── README.md                 # This file
+```
+
+### Key Components
+
+- **API Services**: Modular API integrations with authentication
+- **Sync Service**: Core business logic for comparison and synchronization
+- **Progress Tracker**: Real-time progress monitoring with visual feedback
+- **JSON Importer**: File upload and validation component
+
+## 🔒 Security & Privacy
+
+- **OAuth2 Flow**: Secure authentication using industry standards
+- **Local Storage**: Tokens stored locally in browser (never sent to third parties)
+- **HTTPS Required**: OAuth flows require HTTPS for security
+- **No Server**: Purely client-side application for maximum privacy
+- **Rate Limiting**: Respects API rate limits to prevent abuse
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-**CORS Errors**:
-- For development, use a CORS proxy
-- For production, implement proper backend authentication
-- Consider using browser extensions for testing
+1. **Authentication Failed**:
+   - Check client IDs are correct
+   - Ensure redirect URI matches exactly
+   - Clear browser cache and try again
 
-**API Rate Limits**:
-- Implement exponential backoff
-- Add delay between requests
-- Cache responses when possible
+2. **CORS Errors**:
+   - Make sure you're using HTTPS (required for OAuth)
+   - Check that redirect URIs are configured correctly
 
-**Authentication Failures**:
-- Verify client credentials
-- Check redirect URI configuration
-- Ensure proper OAuth2 flow implementation
+3. **Rate Limited**:
+   - The app automatically handles rate limits
+   - Wait for the rate limit window to reset
 
-### Debug Mode
+4. **Import Errors**:
+   - Check JSON format is valid
+   - Ensure required fields (title) are present
+   - Try the sample-data.json file for testing
 
-Enable debug logging:
-```javascript
-// Add to app.js
-const DEBUG = true;
+### Debug Information
 
-function debugLog(message, data = null) {
-    if (DEBUG) {
-        console.log(`[DEBUG] ${message}`, data);
-    }
-}
-```
+The Settings tab provides debug information including:
+- Authentication status
+- Current operation state
+- Browser information
+- Timestamps
+
+## 🧪 Testing
+
+### Test with Sample Data
+
+1. Download `sample-data.json` from the repository
+2. Use the JSON Import feature to test the application
+3. Try syncing to a test account to verify functionality
+
+### Manual Testing Checklist
+
+- [ ] OAuth authentication for both platforms
+- [ ] Username-based sync for anime
+- [ ] Username-based sync for manga
+- [ ] JSON import with various formats
+- [ ] Progress tracking and cancellation
+- [ ] Error handling and validation
+- [ ] Mobile responsiveness
+
+## 🚀 Deployment
+
+### GitHub Pages (Recommended)
+
+1. Fork the repository
+2. Update API client IDs
+3. Enable GitHub Pages
+4. Configure your domain (optional)
+
+### Custom Hosting
+
+1. Upload all files to your web server
+2. Ensure HTTPS is enabled
+3. Update OAuth redirect URIs
+4. Test all functionality
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+2. Create a feature branch: `git checkout -b feature-name`
+3. Commit changes: `git commit -am 'Add feature'`
+4. Push to branch: `git push origin feature-name`
+5. Submit a Pull Request
 
-### Development Guidelines
+## 📄 API Documentation
 
-- Follow ES6+ standards
-- Maintain responsive design
-- Add error handling for all API calls
-- Write descriptive commit messages
-- Test on multiple browsers
+### MyAnimeList API v2
+- [Official Documentation](https://myanimelist.net/apiconfig/references/api/v2)
+- [Authentication Guide](https://myanimelist.net/apiconfig/references/authorization)
 
-## 📄 License
+### AniList GraphQL API
+- [Official Documentation](https://anilist.gitbook.io/anilist-apiv2-docs/)
+- [GraphQL Playground](https://anilist.co/graphiql)
+
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [MyAnimeList](https://myanimelist.net/) for their API
-- [AniList](https://anilist.co/) for their GraphQL API
-- [GitHub Pages](https://pages.github.com/) for free hosting
-- The anime community for inspiration
+- MyAnimeList for providing the API
+- AniList for the GraphQL API
+- The anime community for inspiration and feedback
 
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/anime-tracker-sync/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/anime-tracker-sync/discussions)
-- **Email**: your.email@example.com
 
 ---
 
-**Note**: This application is for personal use and educational purposes. Please respect the terms of service of both MyAnimeList and AniList APIs.
+**⭐ Star this repository if you find it helpful!**
+
+Made with ❤️ for the anime community

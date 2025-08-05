@@ -1,0 +1,127 @@
+[
+  {
+    "title": "Attack on Titan",
+    "status": "completed",
+    "score": 9,
+    "progress": 87,
+    "total_episodes": 87,
+    "start_date": "2023-01-15",
+    "finish_date": "2023-04-10",
+    "notes": "Incredible series with amazing plot twists and character development. The animation and music are top-tier.",
+    "tags": ["shounen", "drama", "action"]
+  },
+  {
+    "title": "Death Note",
+    "status": "completed",
+    "score": 10,
+    "progress": 37,
+    "total_episodes": 37,
+    "start_date": "2022-11-20",
+    "finish_date": "2022-12-15",
+    "notes": "Masterpiece psychological thriller. Light and L's cat-and-mouse game is brilliant.",
+    "tags": ["psychological", "thriller", "supernatural"]
+  },
+  {
+    "title": "Your Name",
+    "status": "completed",
+    "score": 9,
+    "progress": 1,
+    "total_episodes": 1,
+    "start_date": "2023-02-14",
+    "finish_date": "2023-02-14",
+    "notes": "Beautiful movie with stunning animation and emotional story.",
+    "tags": ["movie", "romance", "supernatural"]
+  },
+  {
+    "title": "Demon Slayer",
+    "status": "watching",
+    "score": 8,
+    "progress": 32,
+    "total_episodes": 44,
+    "start_date": "2023-05-01",
+    "notes": "Great animation and fight scenes. Tanjiro is a likeable protagonist.",
+    "tags": ["shounen", "action", "supernatural"]
+  },
+  {
+    "title": "Spirited Away",
+    "status": "completed",
+    "score": 10,
+    "progress": 1,
+    "total_episodes": 1,
+    "start_date": "2023-03-10",
+    "finish_date": "2023-03-10",
+    "notes": "Studio Ghibli masterpiece. Incredible world-building and imagination.",
+    "tags": ["movie", "adventure", "family"]
+  },
+  {
+    "title": "One Piece",
+    "status": "watching",
+    "score": 9,
+    "progress": 650,
+    "total_episodes": 1000,
+    "start_date": "2022-01-01",
+    "notes": "Epic adventure with great character development. Long but worth it.",
+    "tags": ["shounen", "adventure", "comedy"]
+  },
+  {
+    "title": "Jujutsu Kaisen",
+    "status": "completed",
+    "score": 8,
+    "progress": 24,
+    "total_episodes": 24,
+    "start_date": "2023-06-15",
+    "finish_date": "2023-07-05",
+    "notes": "Modern shounen with great animation and interesting curse system.",
+    "tags": ["shounen", "action", "supernatural"]
+  },
+  {
+    "title": "Hunter x Hunter",
+    "status": "on_hold",
+    "score": 9,
+    "progress": 95,
+    "total_episodes": 148,
+    "start_date": "2023-08-01",
+    "notes": "Amazing series but taking a break. Will finish soon.",
+    "tags": ["shounen", "adventure", "action"]
+  },
+  {
+    "title": "Princess Mononoke",
+    "status": "plan_to_watch",
+    "score": 0,
+    "progress": 0,
+    "total_episodes": 1,
+    "notes": "Another Ghibli film on my watchlist.",
+    "tags": ["movie", "adventure", "drama"]
+  },
+  {
+    "title": "Cowboy Bebop",
+    "status": "dropped",
+    "score": 6,
+    "progress": 8,
+    "total_episodes": 26,
+    "start_date": "2023-04-20",
+    "notes": "Classic but didn't click with me. Might retry later.",
+    "tags": ["space", "action", "drama"]
+  },
+  {
+    "title": "Naruto",
+    "status": "completed",
+    "score": 8,
+    "progress": 720,
+    "total_episodes": 720,
+    "start_date": "2021-01-01",
+    "finish_date": "2022-06-30",
+    "notes": "Classic shounen that got me into anime. Great character development.",
+    "tags": ["shounen", "action", "ninja"]
+  },
+  {
+    "title": "My Hero Academia",
+    "status": "watching",
+    "score": 7,
+    "progress": 120,
+    "total_episodes": 140,
+    "start_date": "2023-09-01",
+    "notes": "Solid superhero anime with good world-building.",
+    "tags": ["shounen", "superhero", "school"]
+  }
+]
