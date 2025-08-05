@@ -134,18 +134,7 @@ this.clientId = 'YOUR_ANILIST_CLIENT_ID';
 
 #### Format 1: URL-Based (Recommended)
 ```json
-[
-  {
-    "name": "Attack on Titan",
-    "mal": "https://myanimelist.net/manga/23390/",
-    "al": "https://anilist.co/manga/53390/"
-  },
-  {
-    "name": "Death Note",
-    "mal": "https://myanimelist.net/manga/21/",
-    "al": ""
-  }
-]
+[{"name":"Attack on Titan","mal":"https://myanimelist.net/manga/23390/","al":"https://anilist.co/manga/53390/"},{"name":"Death Note","mal":"https://myanimelist.net/manga/21/","al":""}]
 ```
 
 **Advantages**:

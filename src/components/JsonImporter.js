@@ -360,18 +360,7 @@ class JsonImporter {
                         <div style="margin-bottom: 20px;">
                             <h4 style="color: #4facfe; margin-bottom: 10px;">Format 1: URL-Based (Recommended)</h4>
                             <div class="json-preview">
-[
-  {
-    "name": "Attack on Titan",
-    "mal": "https://myanimelist.net/manga/23390/",
-    "al": "https://anilist.co/manga/53390/"
-  },
-  {
-    "name": "Death Note",
-    "mal": "https://myanimelist.net/manga/21/",
-    "al": ""
-  }
-]
+[{"name":"Attack on Titan","mal":"https://myanimelist.net/manga/23390/","al":"https://anilist.co/manga/53390/"},{"name":"Death Note","mal":"https://myanimelist.net/manga/21/","al":""}]
                             </div>
                             <p style="margin-top: 10px; font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">
                                 <strong>URL Format:</strong> Uses direct MAL and AniList URLs for precise matching. 

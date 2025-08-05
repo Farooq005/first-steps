@@ -594,11 +594,11 @@
                 // Initialize components
                 app.jsonImporter.render('json-import-container');
                 
-                // Handle OAuth callback if present
-                handleOAuthCallback();
-                
                 // Update authentication status
                 updateAuthStatus();
+                
+                // Handle OAuth callback if present (after initialization)
+                await handleOAuthCallback();
                 
                 app.isInitialized = true;
                 console.log('Application initialized successfully');
@@ -644,21 +644,25 @@
 
         async function authenticateMAL() {
             try {
+                console.log('Starting MAL authentication...');
                 localStorage.setItem('oauth_platform', 'mal');
                 await app.syncService.authenticateMAL();
             } catch (error) {
                 console.error('MAL authentication error:', error);
                 showAlert('error', `MAL authentication failed: ${error.message}`);
+                localStorage.removeItem('oauth_platform');
             }
         }
 
         async function authenticateAniList() {
             try {
+                console.log('Starting AniList authentication...');
                 localStorage.setItem('oauth_platform', 'anilist');
                 await app.syncService.authenticateAniList();
             } catch (error) {
                 console.error('AniList authentication error:', error);
                 showAlert('error', `AniList authentication failed: ${error.message}`);
+                localStorage.removeItem('oauth_platform');
             }
         }
 
@@ -666,6 +670,12 @@
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('code')) {
                 try {
+                    // Make sure syncService is initialized
+                    if (!app.syncService) {
+                        console.error('SyncService not initialized yet');
+                        return;
+                    }
+                    
                     const result = await app.syncService.handleOAuthCallback();
                     if (result && result.success) {
                         showAlert('success', `Successfully authenticated with ${result.platform.toUpperCase()}!`);
@@ -674,6 +684,8 @@
                         // Clear URL parameters
                         const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
                         window.history.replaceState({}, document.title, newUrl);
+                    } else if (result && !result.success) {
+                        showAlert('error', `Authentication failed: ${result.error || 'Unknown error'}`);
                     }
                 } catch (error) {
                     console.error('OAuth callback error:', error);
@@ -683,6 +695,12 @@
         }
 
         function updateAuthStatus() {
+            // Check if syncService is available
+            if (!app.syncService) {
+                console.log('SyncService not available for auth status update');
+                return;
+            }
+            
             // MAL status
             const malAuthenticated = app.syncService.isMALAuthenticated();
             const malCard = document.getElementById('mal-auth-card');
@@ -1006,6 +1024,10 @@
 
         // Helper functions for debugging
         function getDebugInfo() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasOAuthCode = urlParams.has('code');
+            const oauthPlatform = localStorage.getItem('oauth_platform');
+            
             return {
                 initialized: app.isInitialized,
                 malAuthenticated: app.syncService?.isMALAuthenticated(),
@@ -1013,7 +1035,18 @@
                 currentDataType: app.currentDataType,
                 hasComparisonResults: !!app.comparisonResults,
                 userAgent: navigator.userAgent,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                // OAuth debugging
+                hasOAuthCode: hasOAuthCode,
+                oauthCode: hasOAuthCode ? urlParams.get('code')?.substring(0, 10) + '...' : null,
+                oauthPlatform: oauthPlatform,
+                currentUrl: window.location.href,
+                localStorage: {
+                    malToken: !!localStorage.getItem('mal_access_token'),
+                    anilistToken: !!localStorage.getItem('anilist_access_token'),
+                    malExpiry: localStorage.getItem('mal_expires_at'),
+                    anilistExpiry: localStorage.getItem('anilist_expires_at')
+                }
             };
         }
 
