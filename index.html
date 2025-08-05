@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Tracker Data Sync - Working Version</title>
+    <title>Anime Tracker Data Sync - Production Version</title>
     <style>
         * {
             margin: 0;
@@ -52,6 +52,35 @@
             font-weight: 600;
         }
 
+        .auth-status {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            min-width: 200px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .auth-card.authenticated {
+            border-color: rgba(74, 222, 128, 0.5);
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        .auth-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+
         .card {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -69,6 +98,26 @@
             align-items: center;
             gap: 10px;
             font-size: 1.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .auth-status {
+                flex-direction: column;
+                align-items: center;
+            }
         }
 
         .form-group {
@@ -102,49 +151,7 @@
         }
 
         .form-control::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .input-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .radio-label {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            padding: 12px 20px;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            min-width: 160px;
-            justify-content: center;
-        }
-
-        .radio-label:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(79, 172, 254, 0.5);
-            transform: translateY(-2px);
-        }
-
-        .radio-label input[type="radio"] {
-            margin-right: 10px;
-            accent-color: #4facfe;
-            transform: scale(1.2);
-        }
-
-        .radio-label input[type="radio"]:checked + span {
-            color: #4facfe;
-            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .btn {
@@ -155,395 +162,216 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-right: 12px;
-            margin-bottom: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            min-height: 48px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .btn-primary {
-            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
             color: white;
         }
 
         .btn-success {
-            background: linear-gradient(45deg, #11998e 0%, #38ef7d 100%);
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
             color: white;
         }
 
-        .btn-danger {
-            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-
-        .btn-auth {
-            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-size: 14px;
-            padding: 10px 18px;
-            min-height: auto;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .auth-section {
-            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);
-            border: 1px solid rgba(79, 172, 254, 0.3);
-            border-radius: 15px;
-            padding: 30px;
-            margin: 25px 0;
-        }
-
-        .auth-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            align-items: center;
-        }
-
-        .auth-item {
+        .button-group {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .auth-info {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .auth-platform {
-            font-weight: 600;
-            font-size: 16px;
-            color: #fff;
-        }
-
-        .auth-status {
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            display: inline-block;
-        }
-
-        .auth-status.authenticated {
-            background: rgba(56, 239, 125, 0.2);
-            color: #38ef7d;
-            border: 1px solid rgba(56, 239, 125, 0.3);
-        }
-
-        .auth-status.not-authenticated {
-            background: rgba(245, 87, 108, 0.2);
-            color: #f5576c;
-            border: 1px solid rgba(245, 87, 108, 0.3);
-        }
-
-        /* JSON Section Styles */
-        #jsonSection {
-            display: none;
-        }
-
-        .json-upload-area {
-            border: 3px dashed rgba(79, 172, 254, 0.5);
-            border-radius: 15px;
-            padding: 50px 30px;
-            text-align: center;
-            margin: 25px 0;
-            transition: all 0.3s ease;
-            background: linear-gradient(135deg, rgba(79, 172, 254, 0.05) 0%, rgba(0, 242, 254, 0.05) 100%);
-            cursor: pointer;
-        }
-
-        .json-upload-area:hover {
-            border-color: #4facfe;
-            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%);
-            transform: translateY(-2px);
-        }
-
-        .json-upload-area.dragover {
-            border-color: #00f2fe;
-            background: linear-gradient(135deg, rgba(79, 172, 254, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%);
-        }
-
-        .upload-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            color: #4facfe;
-        }
-
-        .upload-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #4facfe;
-        }
-
-        .upload-description {
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 20px;
-            font-size: 1rem;
-        }
-
-        .file-status {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            font-weight: 600;
-            display: none;
-        }
-
-        .file-status.show {
-            display: block;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 25px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            overflow: hidden;
-            margin: 25px 0;
-            display: none;
-            position: relative;
-        }
-
-        .progress-bar.show {
-            display: block;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
-            width: 0%;
-            transition: width 0.5s ease;
-            border-radius: 12px;
-        }
-
-        .sync-direction {
-            text-align: center;
-            padding: 25px;
-            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%);
-            border-radius: 12px;
-            margin: 25px 0;
-            font-size: 1.3rem;
-            font-weight: 600;
-            border: 1px solid rgba(79, 172, 254, 0.3);
-            min-height: 70px;
-            display: flex;
-            align-items: center;
+            gap: 15px;
             justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
         }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 25px;
-            margin: 25px 0;
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+            display: none;
         }
 
-        .stat-card {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.3s ease;
+        .alert.success {
+            background: rgba(74, 222, 128, 0.1);
+            border-left-color: #4ade80;
+            color: #4ade80;
         }
 
-        .stat-card:hover {
-            transform: translateY(-5px);
+        .alert.error {
+            background: rgba(248, 113, 113, 0.1);
+            border-left-color: #f87171;
+            color: #f87171;
         }
 
-        .stat-number {
-            font-size: 3rem;
-            font-weight: bold;
+        .alert.warning {
+            background: rgba(251, 191, 36, 0.1);
+            border-left-color: #fbbf24;
+            color: #fbbf24;
+        }
+
+        .alert.info {
+            background: rgba(79, 172, 254, 0.1);
+            border-left-color: #4facfe;
             color: #4facfe;
-            margin-bottom: 10px;
-        }
-
-        .stat-label {
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 600;
-            font-size: 1rem;
         }
 
         .tabs {
             display: flex;
-            margin-bottom: 25px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-            overflow-x: auto;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 5px;
         }
 
         .tab {
-            padding: 18px 30px;
-            background: none;
-            border: none;
+            flex: 1;
+            padding: 12px 20px;
+            background: transparent;
             color: rgba(255, 255, 255, 0.6);
+            border: none;
+            border-radius: 8px;
             cursor: pointer;
-            border-bottom: 3px solid transparent;
             transition: all 0.3s ease;
             font-size: 16px;
-            font-weight: 600;
-            white-space: nowrap;
+            font-weight: 500;
         }
 
         .tab.active {
-            color: #4facfe;
-            border-bottom-color: #4facfe;
-        }
-
-        .tab:hover {
-            color: rgba(255, 255, 255, 0.9);
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
         }
 
         .tab-content {
             display: none;
-            animation: fadeIn 0.3s ease;
         }
 
         .tab-content.active {
             display: block;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 25px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 18px 20px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .data-table th {
-            background: linear-gradient(135deg, rgba(79, 172, 254, 0.2) 0%, rgba(0, 242, 254, 0.2) 100%);
-            font-weight: 600;
-            color: #4facfe;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .data-table tbody tr:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .data-table tbody tr:nth-child(even) {
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .alert {
-            padding: 18px 25px;
-            border-radius: 10px;
-            margin: 15px 0;
-            font-weight: 600;
+        .data-type-selector {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideIn 0.3s ease;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
         }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
+        .data-type-btn {
+            padding: 10px 20px;
+            border: 2px solid rgba(79, 172, 254, 0.5);
+            background: rgba(79, 172, 254, 0.1);
+            color: #4facfe;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
         }
 
-        .alert-success {
-            background: rgba(56, 239, 125, 0.2);
-            border: 1px solid rgba(56, 239, 125, 0.3);
-            color: #38ef7d;
+        .data-type-btn.active {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-color: transparent;
         }
 
-        .alert-error {
-            background: rgba(245, 87, 108, 0.2);
-            border: 1px solid rgba(245, 87, 108, 0.3);
-            color: #f5576c;
+        .results-section {
+            display: none;
+            margin-top: 30px;
         }
 
-        .alert-warning {
-            background: rgba(255, 193, 7, 0.2);
-            border: 1px solid rgba(255, 193, 7, 0.3);
-            color: #ffc107;
+        .results-section.visible {
+            display: block;
         }
 
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 3px solid #4facfe;
-            width: 35px;
-            height: 35px;
-            animation: spin 2s linear infinite;
-            display: inline-block;
-            margin-right: 15px;
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4facfe;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .sync-options {
+            background: rgba(79, 172, 254, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
         }
 
         .loading {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 25px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #4facfe;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
         }
 
-        .loading.active {
-            display: flex;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
-        #syncLog {
-            max-height: 300px;
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 20px;
-            border-radius: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.4;
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px;
+            color: rgba(255, 255, 255, 0.6);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        #syncLog div {
-            margin-bottom: 5px;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        .hidden {
+            display: none !important;
         }
 
         /* Responsive Design */
@@ -551,230 +379,611 @@
             .container {
                 padding: 15px;
             }
-
-            .header h1 {
-                font-size: 2.2rem;
-            }
-
-            .input-row {
-                grid-template-columns: 1fr;
-            }
-
-            .auth-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .radio-group {
+            
+            .button-group {
                 flex-direction: column;
-                gap: 10px;
+                align-items: center;
             }
-
-            .tabs {
-                flex-wrap: wrap;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .auth-item {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-            }
-
+            
             .btn {
                 width: 100%;
-                justify-content: center;
-                margin-right: 0;
+                max-width: 300px;
             }
-        }
-
-        /* Animations */
-        .card {
-            animation: slideUp 0.5s ease;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Hide file input */
-        #jsonFile {
-            display: none;
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .data-type-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .data-type-btn {
+                width: 100%;
+                max-width: 200px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
-        <header class="header">
-            <h1>🎌 Anime Tracker Data Sync</h1>
+        <div class="header">
+            <h1>🚀 Anime Tracker Data Sync</h1>
             <p>Synchronize your anime and manga lists between MyAnimeList and AniList</p>
-            <div class="subtitle">OAuth2 Authentication • JSON Import • Real-time Sync</div>
-        </header>
+            <div class="subtitle">Production Version - Real API Integration</div>
+        </div>
 
-        <!-- Authentication Section -->
-        <section class="card auth-section">
-            <h2>🔐 OAuth2 Authentication</h2>
-            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 20px;">
-                Authenticate with your accounts to access private lists and enable syncing features.
-            </p>
-            <div class="auth-grid">
-                <div class="auth-item">
-                    <div class="auth-info">
-                        <div class="auth-platform">📚 MyAnimeList</div>
-                        <span id="malAuthStatus" class="auth-status not-authenticated">❌ Not authenticated</span>
-                    </div>
-                    <button id="malAuthBtn" class="btn btn-auth">🔐 Authenticate MAL</button>
-                </div>
-                <div class="auth-item">
-                    <div class="auth-info">
-                        <div class="auth-platform">📺 AniList</div>
-                        <span id="anilistAuthStatus" class="auth-status not-authenticated">❌ Not authenticated</span>
-                    </div>
-                    <button id="anilistAuthBtn" class="btn btn-auth">🔐 Authenticate AniList</button>
-                </div>
+        <!-- Authentication Status -->
+        <div class="auth-status">
+            <div class="auth-card" id="mal-auth-card">
+                <div class="auth-icon">📋</div>
+                <h3>MyAnimeList</h3>
+                <p id="mal-auth-status">Not Connected</p>
+                <button class="btn btn-primary btn-small" id="mal-auth-btn" onclick="authenticateMAL()">Connect</button>
             </div>
-        </section>
-
-        <!-- Configuration Section -->
-        <section class="card">
-            <h2>⚙️ Configuration</h2>
-
-            <div class="form-group">
-                <label class="form-label">Sync Mode</label>
-                <div class="radio-group">
-                    <label class="radio-label">
-                        <input type="radio" name="syncType" value="account" checked>
-                        <span>👥 Account Sync</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="syncType" value="json">
-                        <span>📄 JSON File Import</span>
-                    </label>
-                </div>
+            <div class="auth-card" id="anilist-auth-card">
+                <div class="auth-icon">📚</div>
+                <h3>AniList</h3>
+                <p id="anilist-auth-status">Not Connected</p>
+                <button class="btn btn-primary btn-small" id="anilist-auth-btn" onclick="authenticateAniList()">Connect</button>
             </div>
+        </div>
 
-            <!-- Account Sync Section -->
-            <div id="accountSection">
-                <div class="input-row">
+        <!-- Main Content Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('username-sync')">👥 Username Sync</button>
+            <button class="tab" onclick="switchTab('json-import')">📁 JSON Import</button>
+            <button class="tab" onclick="switchTab('settings')">⚙️ Settings</button>
+        </div>
+
+        <!-- Username Sync Tab -->
+        <div id="username-sync" class="tab-content active">
+            <div class="card">
+                <h2>
+                    <span>👥</span>
+                    Username-Based Sync
+                </h2>
+                
+                <!-- Data Type Selector -->
+                <div class="data-type-selector">
+                    <button class="data-type-btn active" data-type="anime">📺 Anime</button>
+                    <button class="data-type-btn" data-type="manga">📖 Manga</button>
+                </div>
+
+                <!-- Alert -->
+                <div id="main-alert" class="alert"></div>
+
+                <!-- Username Inputs -->
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="malUsername" class="form-label">MyAnimeList Username</label>
-                        <input type="text" id="malUsername" class="form-control" placeholder="Enter your MAL username">
+                        <label class="form-label" for="mal-username">MyAnimeList Username</label>
+                        <input type="text" class="form-control" id="mal-username" placeholder="Enter MAL username" />
                     </div>
                     <div class="form-group">
-                        <label for="anilistUsername" class="form-label">AniList Username</label>
-                        <input type="text" id="anilistUsername" class="form-control" placeholder="Enter your AniList username">
+                        <label class="form-label" for="anilist-username">AniList Username</label>
+                        <input type="text" class="form-control" id="anilist-username" placeholder="Enter AniList username" />
+                    </div>
+                </div>
+
+                <!-- Sync Direction -->
+                <div class="form-group">
+                    <label class="form-label" for="sync-target">Sync Direction</label>
+                    <select class="form-control" id="sync-target">
+                        <option value="">Select target platform...</option>
+                        <option value="anilist">Sync missing items to AniList</option>
+                        <option value="mal">Sync missing items to MyAnimeList</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="button-group">
+                    <button class="btn btn-primary" id="fetch-data-btn" onclick="fetchUserData()">
+                        <span id="fetch-loading" class="loading hidden"></span>
+                        Fetch & Compare Lists
+                    </button>
+                    <button class="btn btn-success" id="start-sync-btn" onclick="startSync()" disabled>
+                        Start Synchronization
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results-section" class="results-section">
+                <div class="card">
+                    <h2>📊 Comparison Results</h2>
+                    
+                    <!-- Statistics -->
+                    <div class="stats-grid" id="stats-grid">
+                        <!-- Stats will be populated dynamically -->
+                    </div>
+
+                    <!-- Sync Options -->
+                    <div class="sync-options" id="sync-options">
+                        <h3 style="color: #4facfe; margin-bottom: 15px;">Synchronization Options</h3>
+                        <p style="margin-bottom: 15px;">Choose what to sync to your target platform:</p>
+                        <!-- Options will be populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JSON Import Tab -->
+        <div id="json-import" class="tab-content">
+            <div id="json-import-container">
+                <!-- JSON Import component will be rendered here -->
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="card">
+                <h2>⚙️ Settings & Configuration</h2>
+                
+                <div class="form-group">
+                    <label class="form-label">Authentication</label>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" onclick="clearAllAuth()">Clear All Authentication</button>
+                        <button class="btn btn-secondary" onclick="exportLogs()">Export Sync Logs</button>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="targetPlatform" class="form-label">Target Platform (Where to sync missing items)</label>
-                    <select id="targetPlatform" class="form-control">
-                        <option value="anilist">📺 AniList</option>
-                        <option value="mal">📚 MyAnimeList</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- JSON Import Section -->
-            <div id="jsonSection">
-                <div class="json-upload-area" onclick="document.getElementById('jsonFile').click()">
-                    <div class="upload-icon">📁</div>
-                    <div class="upload-title">Upload JSON File</div>
-                    <div class="upload-description">
-                        Click to select your anime/manga list in JSON format<br>
-                        <small>Supports your exact export format with "name", "mal", and "al" fields</small>
-                    </div>
-                    <input type="file" id="jsonFile" accept=".json">
-                    <button type="button" class="btn btn-secondary">Choose File</button>
-                </div>
-
-                <div id="fileStatus" class="file-status"></div>
-
-                <div class="form-group">
-                    <label for="jsonUsername" class="form-label">Target Username</label>
-                    <input type="text" id="jsonUsername" class="form-control" 
-                           placeholder="Enter username where you want to sync the JSON data">
-                    <small style="color: rgba(255, 255, 255, 0.7); margin-top: 8px; display: block;">
-                        This is the username on the target platform where the JSON entries will be synced.
-                    </small>
+                    <label class="form-label">Rate Limiting</label>
+                    <p style="color: rgba(255,255,255,0.7); margin-bottom: 10px;">
+                        MAL: 1 request/second • AniList: 90 requests/minute
+                    </p>
                 </div>
 
                 <div class="form-group">
-                    <label for="targetPlatform" class="form-label">Target Platform</label>
-                    <select class="form-control">
-                        <option value="anilist">📺 AniList</option>
-                        <option value="mal">📚 MyAnimeList</option>
-                    </select>
+                    <label class="form-label">Debug Information</label>
+                    <textarea class="form-control" id="debug-info" rows="8" readonly 
+                              placeholder="Debug information will appear here..."></textarea>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Sync Operations Section -->
-        <section class="card">
-            <h2>🔄 Sync Operations</h2>
+        <!-- Progress Tracker Container -->
+        <div id="progress-tracker"></div>
 
-            <div class="sync-direction" id="syncDirection">
-                🎯 Ready to sync
-            </div>
-
-            <div style="text-align: center; margin: 30px 0;">
-                <button id="fetchBtn" class="btn btn-primary">📥 Fetch Data</button>
-                <button id="compareBtn" class="btn btn-secondary" disabled>⚖️ Compare Lists</button>
-                <button id="syncBtn" class="btn btn-success" disabled>🚀 Start Sync</button>
-                <button id="resetBtn" class="btn btn-danger">🔄 Reset</button>
-            </div>
-
-            <div class="progress-bar" id="progressBar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-
-            <div class="loading" id="loadingIndicator">
-                <div class="spinner"></div>
-                <span id="loadingText">Processing...</span>
-            </div>
-        </section>
-
-        <!-- Results Section -->
-        <section class="card">
-            <h2>📊 Results</h2>
-
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="intersectionCount">0</div>
-                    <div class="stat-label">Common Items</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="differencesCount">0</div>
-                    <div class="stat-label">Items to Sync</div>
-                </div>
-            </div>
-
-            <div class="tabs">
-                <button class="tab active" data-tab="intersection">🤝 Intersection</button>
-                <button class="tab" data-tab="differences">🔍 Differences</button>
-                <button class="tab" data-tab="log">📝 Sync Log</button>
-            </div>
-
-            <div class="tab-content active" id="intersection">
-                <div id="intersectionStats"><h3>🤝 Common Items: 0</h3></div>
-                <div id="intersectionData"><p>🔍 No data to display. Fetch and compare data to see results.</p></div>
-            </div>
-
-            <div class="tab-content" id="differences">
-                <div id="differencesStats"><h3>🔄 Items to Sync: 0</h3></div>
-                <div id="differencesData"><p>🔍 No data to display. Fetch and compare data to see results.</p></div>
-            </div>
-
-            <div class="tab-content" id="log">
-                <div id="syncLog"><p>📝 Application ready! Select a sync mode and get started.</p></div>
-            </div>
-        </section>
+        <!-- Footer -->
+        <div class="footer">
+            <p>🎯 Built for real anime/manga list synchronization</p>
+            <p>Supports MyAnimeList API v2 and AniList GraphQL API</p>
+        </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Load all components and services -->
+    <script src="src/api/malApi.js"></script>
+    <script src="src/api/anilistApi.js"></script>
+    <script src="src/services/syncService.js"></script>
+    <script src="src/components/ProgressTracker.js"></script>
+    <script src="src/components/JsonImporter.js"></script>
+
+    <script>
+        // Global application state
+        let app = {
+            syncService: null,
+            progressTracker: null,
+            jsonImporter: null,
+            currentDataType: 'anime',
+            comparisonResults: null,
+            isInitialized: false
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            try {
+                // Initialize services
+                app.syncService = new SyncService();
+                app.progressTracker = new ProgressTracker('progress-tracker');
+                app.jsonImporter = new JsonImporter();
+
+                // Setup progress tracking
+                app.syncService.onProgress(app.progressTracker.handleProgressUpdate.bind(app.progressTracker));
+                app.progressTracker.setOnCancel(() => app.syncService.cancel());
+
+                // Setup event listeners
+                setupEventListeners();
+                
+                // Initialize components
+                app.jsonImporter.render('json-import-container');
+                
+                // Handle OAuth callback if present
+                handleOAuthCallback();
+                
+                // Update authentication status
+                updateAuthStatus();
+                
+                app.isInitialized = true;
+                console.log('Application initialized successfully');
+                
+            } catch (error) {
+                console.error('Failed to initialize application:', error);
+                showAlert('error', `Failed to initialize: ${error.message}`);
+            }
+        }
+
+        function setupEventListeners() {
+            // Data type selector
+            document.querySelectorAll('.data-type-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.data-type-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    app.currentDataType = this.dataset.type;
+                });
+            });
+
+            // JSON import event
+            document.addEventListener('jsonImported', function(event) {
+                handleJsonImport(event.detail);
+            });
+
+            // Form validation
+            ['mal-username', 'anilist-username'].forEach(id => {
+                document.getElementById(id).addEventListener('input', validateForm);
+            });
+            
+            document.getElementById('sync-target').addEventListener('change', validateForm);
+        }
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        async function authenticateMAL() {
+            try {
+                localStorage.setItem('oauth_platform', 'mal');
+                await app.syncService.authenticateMAL();
+            } catch (error) {
+                console.error('MAL authentication error:', error);
+                showAlert('error', `MAL authentication failed: ${error.message}`);
+            }
+        }
+
+        async function authenticateAniList() {
+            try {
+                localStorage.setItem('oauth_platform', 'anilist');
+                await app.syncService.authenticateAniList();
+            } catch (error) {
+                console.error('AniList authentication error:', error);
+                showAlert('error', `AniList authentication failed: ${error.message}`);
+            }
+        }
+
+        async function handleOAuthCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('code')) {
+                try {
+                    const result = await app.syncService.handleOAuthCallback();
+                    if (result && result.success) {
+                        showAlert('success', `Successfully authenticated with ${result.platform.toUpperCase()}!`);
+                        updateAuthStatus();
+                        
+                        // Clear URL parameters
+                        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                        window.history.replaceState({}, document.title, newUrl);
+                    }
+                } catch (error) {
+                    console.error('OAuth callback error:', error);
+                    showAlert('error', `Authentication failed: ${error.message}`);
+                }
+            }
+        }
+
+        function updateAuthStatus() {
+            // MAL status
+            const malAuthenticated = app.syncService.isMALAuthenticated();
+            const malCard = document.getElementById('mal-auth-card');
+            const malStatus = document.getElementById('mal-auth-status');
+            const malBtn = document.getElementById('mal-auth-btn');
+            
+            if (malAuthenticated) {
+                malCard.classList.add('authenticated');
+                malStatus.textContent = 'Connected ✓';
+                malBtn.textContent = 'Disconnect';
+                malBtn.onclick = () => {
+                    app.syncService.malApi.logout();
+                    updateAuthStatus();
+                    showAlert('info', 'Disconnected from MyAnimeList');
+                };
+            } else {
+                malCard.classList.remove('authenticated');
+                malStatus.textContent = 'Not Connected';
+                malBtn.textContent = 'Connect';
+                malBtn.onclick = authenticateMAL;
+            }
+
+            // AniList status
+            const anilistAuthenticated = app.syncService.isAniListAuthenticated();
+            const anilistCard = document.getElementById('anilist-auth-card');
+            const anilistStatus = document.getElementById('anilist-auth-status');
+            const anilistBtn = document.getElementById('anilist-auth-btn');
+            
+            if (anilistAuthenticated) {
+                anilistCard.classList.add('authenticated');
+                anilistStatus.textContent = 'Connected ✓';
+                anilistBtn.textContent = 'Disconnect';
+                anilistBtn.onclick = () => {
+                    app.syncService.anilistApi.logout();
+                    updateAuthStatus();
+                    showAlert('info', 'Disconnected from AniList');
+                };
+            } else {
+                anilistCard.classList.remove('authenticated');
+                anilistStatus.textContent = 'Not Connected';
+                anilistBtn.textContent = 'Connect';
+                anilistBtn.onclick = authenticateAniList;
+            }
+        }
+
+        function validateForm() {
+            const malUsername = document.getElementById('mal-username').value.trim();
+            const anilistUsername = document.getElementById('anilist-username').value.trim();
+            const syncTarget = document.getElementById('sync-target').value;
+            
+            const fetchBtn = document.getElementById('fetch-data-btn');
+            const isValid = malUsername && anilistUsername;
+            
+            fetchBtn.disabled = !isValid;
+            
+            // Update sync button based on results availability
+            const syncBtn = document.getElementById('start-sync-btn');
+            syncBtn.disabled = !isValid || !syncTarget || !app.comparisonResults;
+        }
+
+        async function fetchUserData() {
+            const malUsername = document.getElementById('mal-username').value.trim();
+            const anilistUsername = document.getElementById('anilist-username').value.trim();
+            
+            if (!malUsername || !anilistUsername) {
+                showAlert('error', 'Please enter both usernames');
+                return;
+            }
+
+            try {
+                app.progressTracker.show('Fetching User Data');
+                
+                const results = await app.syncService.fetchAllData(
+                    malUsername, 
+                    anilistUsername, 
+                    app.currentDataType
+                );
+                
+                if (results.errors.length > 0) {
+                    const errorMessages = results.errors.map(e => `${e.platform}: ${e.error}`).join('\n');
+                    showAlert('warning', `Some errors occurred:\n${errorMessages}`);
+                }
+                
+                // Compare the data
+                const comparison = app.syncService.compareLists(results.malData, results.anilistData);
+                app.comparisonResults = {
+                    ...comparison,
+                    malData: results.malData,
+                    anilistData: results.anilistData
+                };
+                
+                // Show results
+                displayResults(app.comparisonResults);
+                validateForm();
+                
+                app.progressTracker.hide();
+                showAlert('success', 'Data fetched and compared successfully!');
+                
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                app.progressTracker.hide();
+                showAlert('error', `Failed to fetch data: ${error.message}`);
+            }
+        }
+
+        function displayResults(results) {
+            const statsGrid = document.getElementById('stats-grid');
+            const resultsSection = document.getElementById('results-section');
+            const syncOptions = document.getElementById('sync-options');
+            
+            // Generate statistics
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <span class="stat-number">${results.stats.malTotal}</span>
+                    <span class="stat-label">MAL ${app.currentDataType}</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">${results.stats.anilistTotal}</span>
+                    <span class="stat-label">AniList ${app.currentDataType}</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">${results.stats.matches}</span>
+                    <span class="stat-label">Matches Found</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">${results.stats.malOnlyCount}</span>
+                    <span class="stat-label">MAL Only</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number">${results.stats.anilistOnlyCount}</span>
+                    <span class="stat-label">AniList Only</span>
+                </div>
+            `;
+            
+            // Generate sync options
+            const syncTarget = document.getElementById('sync-target').value;
+            if (syncTarget) {
+                const missingItems = syncTarget === 'anilist' 
+                    ? results.differences.malOnly 
+                    : results.differences.anilistOnly;
+                    
+                syncOptions.innerHTML = `
+                    <h3 style="color: #4facfe; margin-bottom: 15px;">Synchronization Preview</h3>
+                    <p style="margin-bottom: 15px;">
+                        Ready to sync <strong>${missingItems.length}</strong> ${app.currentDataType} 
+                        items to <strong>${syncTarget === 'anilist' ? 'AniList' : 'MyAnimeList'}</strong>
+                    </p>
+                    ${missingItems.length > 0 ? `
+                        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; max-height: 200px; overflow-y: auto;">
+                            ${missingItems.slice(0, 10).map(item => `
+                                <div style="padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <strong>${item.title}</strong> - ${item.status}
+                                    ${item.score ? ` (Score: ${item.score})` : ''}
+                                </div>
+                            `).join('')}
+                            ${missingItems.length > 10 ? `<div style="padding: 10px 0; color: #4facfe;">...and ${missingItems.length - 10} more items</div>` : ''}
+                        </div>
+                    ` : '<p style="color: #4ade80;">✓ All items are already synchronized!</p>'}
+                `;
+            }
+            
+            resultsSection.classList.add('visible');
+        }
+
+        async function startSync() {
+            const syncTarget = document.getElementById('sync-target').value;
+            
+            if (!app.comparisonResults || !syncTarget) {
+                showAlert('error', 'Please fetch data and select a sync target first');
+                return;
+            }
+            
+            const missingItems = syncTarget === 'anilist' 
+                ? app.comparisonResults.differences.malOnly 
+                : app.comparisonResults.differences.anilistOnly;
+            
+            if (missingItems.length === 0) {
+                showAlert('info', 'No items to sync - everything is already synchronized!');
+                return;
+            }
+            
+            try {
+                app.progressTracker.show(`Syncing to ${syncTarget.toUpperCase()}`);
+                
+                const results = await app.syncService.syncToTarget(
+                    missingItems, 
+                    syncTarget, 
+                    app.currentDataType
+                );
+                
+                app.progressTracker.hide();
+                
+                const message = `Sync completed!\nSuccess: ${results.success}\nFailed: ${results.failed}`;
+                
+                if (results.failed > 0) {
+                    showAlert('warning', message + `\n\nSome items failed to sync. Check the logs for details.`);
+                } else {
+                    showAlert('success', message);
+                }
+                
+            } catch (error) {
+                console.error('Sync error:', error);
+                app.progressTracker.hide();
+                showAlert('error', `Sync failed: ${error.message}`);
+            }
+        }
+
+        function handleJsonImport(data) {
+            console.log('JSON import data received:', data);
+            
+            try {
+                const normalizedData = app.syncService.processJsonImport(
+                    data.data, 
+                    document.getElementById('sync-target').value || 'anilist',
+                    app.currentDataType
+                );
+                
+                // Process as if it's MAL data for comparison
+                app.comparisonResults = {
+                    malData: normalizedData,
+                    anilistData: [], // Empty for now
+                    intersection: [],
+                    differences: {
+                        malOnly: normalizedData,
+                        anilistOnly: []
+                    },
+                    stats: {
+                        malTotal: normalizedData.length,
+                        anilistTotal: 0,
+                        matches: 0,
+                        malOnlyCount: normalizedData.length,
+                        anilistOnlyCount: 0
+                    }
+                };
+                
+                displayResults(app.comparisonResults);
+                validateForm();
+                
+                showAlert('success', `Successfully imported ${normalizedData.length} items from JSON file: ${data.filename}`);
+                
+                // Switch to main tab
+                switchTab('username-sync');
+                document.querySelector('.tab[onclick="switchTab(\'username-sync\')"]').classList.add('active');
+                document.querySelector('.tab[onclick="switchTab(\'json-import\')"]').classList.remove('active');
+                
+            } catch (error) {
+                console.error('JSON import error:', error);
+                showAlert('error', `Failed to process JSON import: ${error.message}`);
+            }
+        }
+
+        function clearAllAuth() {
+            app.syncService.malApi.logout();
+            app.syncService.anilistApi.logout();
+            updateAuthStatus();
+            showAlert('info', 'All authentication data cleared');
+        }
+
+        function exportLogs() {
+            try {
+                app.progressTracker.exportLog();
+                showAlert('success', 'Logs exported successfully');
+            } catch (error) {
+                showAlert('error', `Failed to export logs: ${error.message}`);
+            }
+        }
+
+        function showAlert(type, message) {
+            const alert = document.getElementById('main-alert');
+            alert.className = `alert ${type}`;
+            alert.textContent = message;
+            alert.style.display = 'block';
+            
+            // Auto-hide after 5 seconds for success/info alerts
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Helper functions for debugging
+        function getDebugInfo() {
+            return {
+                initialized: app.isInitialized,
+                malAuthenticated: app.syncService?.isMALAuthenticated(),
+                anilistAuthenticated: app.syncService?.isAniListAuthenticated(),
+                currentDataType: app.currentDataType,
+                hasComparisonResults: !!app.comparisonResults,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        // Update debug info periodically
+        setInterval(() => {
+            const debugTextarea = document.getElementById('debug-info');
+            if (debugTextarea && app.isInitialized) {
+                debugTextarea.value = JSON.stringify(getDebugInfo(), null, 2);
+            }
+        }, 2000);
+    </script>
 </body>
 </html>
