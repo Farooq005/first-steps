@@ -28,12 +28,6 @@ class AniListApiService {
 
     // Exchange authorization code for access token
     async exchangeCodeForToken(code) {
-        console.log('AniList OAuth: Exchanging code for token...', {
-            clientId: this.clientId,
-            redirectUri: this.redirectUri,
-            codeLength: code?.length
-        });
-        
         const response = await fetch(this.tokenUrl, {
             method: 'POST',
             headers: {
@@ -50,17 +44,10 @@ class AniListApiService {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('AniList OAuth Error:', {
-                status: response.status,
-                statusText: response.statusText,
-                errorText: errorText
-            });
-            throw new Error(`Failed to exchange code for token: ${response.status} ${response.statusText} - ${errorText}`);
+            throw new Error(`Failed to exchange code for token: ${response.statusText}`);
         }
 
         const tokenData = await response.json();
-        console.log('AniList OAuth: Token exchange successful');
         this.storeTokens(tokenData);
         return tokenData;
     }

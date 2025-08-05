@@ -323,27 +323,45 @@ class SyncService {
                     total: missingItems.length
                 });
 
-                                 let success = false;
-                 let targetId = null;
+                let searchResult = null;
+                let success = false;
 
-                 // Handle URL-based imports with direct ID mapping
-                 if (item.isUrlImport) {
-                     if (targetPlatform === 'anilist' && item.alId) {
-                         // Use direct AniList ID from URL
-                         targetId = item.alId;
-                         success = await this.addToAniListById(targetId, item, dataType);
-                     } else if (targetPlatform === 'mal' && item.malId) {
-                         // Use direct MAL ID from URL
-                         targetId = item.malId;
-                         success = await this.addToMALById(targetId, item, dataType);
-                     } else {
-                         // Fallback to search if target ID not available
-                         success = await this.addBySearch(targetPlatform, item, dataType);
-                     }
-                 } else {
-                     // Regular metadata-based imports - use search
-                     success = await this.addBySearch(targetPlatform, item, dataType);
-                 }
+                if (targetPlatform === 'anilist') {
+                    // Search for the anime/manga on AniList
+                    if (dataType === 'anime') {
+                        searchResult = await this.anilistApi.searchAnime(item.title);
+                    } else {
+                        searchResult = await this.anilistApi.searchManga(item.title);
+                    }
+
+                    if (searchResult) {
+                        // Add to AniList
+                        const listData = {
+                            status: this.mapStatusToAniList(item.status),
+                            score: item.score,
+                            progress: item.progress || item.progress_chapters,
+                            progress_volumes: item.progress_volumes,
+                            start_date: item.start_date,
+                            finish_date: item.finish_date,
+                            notes: item.comments || item.notes
+                        };
+
+                        if (dataType === 'anime') {
+                            await this.anilistApi.addAnimeToList(searchResult.id, listData);
+                        } else {
+                            await this.anilistApi.addMangaToList(searchResult.id, listData);
+                        }
+                        success = true;
+                    }
+                } else if (targetPlatform === 'mal') {
+                    // For MAL, we need to search first (implement search if not available)
+                    // For now, we'll skip items that can't be found
+                    this.emitProgress({
+                        type: 'warning',
+                        message: `Cannot search on MAL - skipping ${item.title}`,
+                        progress: progress
+                    });
+                }
 
                 if (success) {
                     results.success++;
@@ -428,76 +446,9 @@ class SyncService {
             progress: 0
         });
 
-        // Check if this is URL-based format or metadata format
-        const sampleItem = jsonData[0] || {};
-        const isUrlFormat = sampleItem.mal || sampleItem.al;
-
-        let normalizedData;
-
-        if (isUrlFormat) {
-            // Handle URL-based format: [{"name":"Title","mal":"url","al":"url"}]
-            normalizedData = this.processUrlBasedFormat(jsonData, targetPlatform, dataType);
-        } else {
-            // Handle metadata format: [{"title":"Title","status":"completed","score":9}]
-            normalizedData = this.processMetadataFormat(jsonData);
-        }
-
-        this.emitProgress({
-            type: 'status',
-            message: `Processed ${normalizedData.length} items from JSON`,
-            progress: 100
-        });
-
-        return normalizedData;
-    }
-
-    // Process URL-based JSON format
-    processUrlBasedFormat(jsonData, targetPlatform, dataType) {
-        return jsonData.map((item, index) => {
-            const title = item.name || item.title || `Untitled ${index + 1}`;
-            const malUrl = item.mal || '';
-            const alUrl = item.al || '';
-
-            // Extract IDs from URLs
-            const malId = this.extractIdFromUrl(malUrl, 'mal');
-            const alId = this.extractIdFromUrl(alUrl, 'anilist');
-
-            // Determine which platform this item is missing from
-            const missingFromAniList = !alUrl || alUrl.trim() === '';
-            const missingFromMAL = !malUrl || malUrl.trim() === '';
-
-            return {
-                id: malId || alId || Math.random(),
-                title: title,
-                status: 'plan_to_watch', // Default status for URL imports
-                score: 0,
-                progress: 0,
-                progress_chapters: 0,
-                progress_volumes: 0,
-                total_episodes: 0,
-                total_chapters: 0,
-                total_volumes: 0,
-                start_date: null,
-                finish_date: null,
-                notes: `Imported from JSON - Original MAL: ${malUrl}, AniList: ${alUrl}`,
-                tags: [],
-                platform: 'json',
-                // Additional metadata for URL format
-                malUrl: malUrl,
-                alUrl: alUrl,
-                malId: malId,
-                alId: alId,
-                missingFromAniList: missingFromAniList,
-                missingFromMAL: missingFromMAL,
-                dataType: dataType,
-                isUrlImport: true
-            };
-        });
-    }
-
-    // Process metadata-based JSON format (original implementation)
-    processMetadataFormat(jsonData) {
-        return jsonData.map(item => {
+        // Normalize JSON data to our internal format
+        const normalizedData = jsonData.map(item => {
+            // Flexible JSON format support
             return {
                 id: item.id || item.mal_id || item.anilist_id || Math.random(),
                 title: item.title || item.name || item.series_title,
@@ -513,116 +464,17 @@ class SyncService {
                 finish_date: item.finish_date || item.finished_date,
                 notes: item.notes || item.comments || '',
                 tags: item.tags || [],
-                platform: 'json',
-                isUrlImport: false
+                platform: 'json'
             };
         });
-    }
 
-    // Extract ID from MAL or AniList URL
-    extractIdFromUrl(url, platform) {
-        if (!url || typeof url !== 'string') return null;
+        this.emitProgress({
+            type: 'status',
+            message: `Processed ${normalizedData.length} items from JSON`,
+            progress: 100
+        });
 
-        try {
-            if (platform === 'mal') {
-                // MAL URLs: https://myanimelist.net/anime/12345/ or https://myanimelist.net/manga/12345/
-                const malMatch = url.match(/myanimelist\.net\/(anime|manga)\/(\d+)/);
-                return malMatch ? parseInt(malMatch[2]) : null;
-            } else if (platform === 'anilist') {
-                // AniList URLs: https://anilist.co/anime/12345/ or https://anilist.co/manga/12345/
-                const alMatch = url.match(/anilist\.co\/(anime|manga)\/(\d+)/);
-                return alMatch ? parseInt(alMatch[2]) : null;
-            }
-        } catch (error) {
-            console.warn(`Failed to extract ID from URL: ${url}`, error);
-        }
-
-        return null;
-    }
-
-    // Add item to AniList using direct ID
-    async addToAniListById(anilistId, item, dataType) {
-        try {
-            const listData = {
-                status: this.mapStatusToAniList(item.status),
-                score: item.score,
-                progress: item.progress || item.progress_chapters,
-                progress_volumes: item.progress_volumes,
-                start_date: item.start_date,
-                finish_date: item.finish_date,
-                notes: item.notes
-            };
-
-            if (dataType === 'anime') {
-                await this.anilistApi.addAnimeToList(anilistId, listData);
-            } else {
-                await this.anilistApi.addMangaToList(anilistId, listData);
-            }
-            return true;
-        } catch (error) {
-            console.error(`Failed to add to AniList by ID ${anilistId}:`, error);
-            return false;
-        }
-    }
-
-    // Add item to MAL using direct ID
-    async addToMALById(malId, item, dataType) {
-        try {
-            const listData = {
-                status: this.mapStatusToMAL(item.status),
-                score: item.score,
-                progress: item.progress || item.progress_chapters,
-                progress_volumes: item.progress_volumes,
-                start_date: item.start_date,
-                finish_date: item.finish_date,
-                notes: item.notes,
-                tags: item.tags
-            };
-
-            if (dataType === 'anime') {
-                await this.malApi.addAnimeToList(malId, listData);
-            } else {
-                await this.malApi.addMangaToList(malId, listData);
-            }
-            return true;
-        } catch (error) {
-            console.error(`Failed to add to MAL by ID ${malId}:`, error);
-            return false;
-        }
-    }
-
-    // Add item using search (fallback method)
-    async addBySearch(targetPlatform, item, dataType) {
-        try {
-            let searchResult = null;
-
-            if (targetPlatform === 'anilist') {
-                // Search for the anime/manga on AniList
-                if (dataType === 'anime') {
-                    searchResult = await this.anilistApi.searchAnime(item.title);
-                } else {
-                    searchResult = await this.anilistApi.searchManga(item.title);
-                }
-
-                if (searchResult) {
-                    return await this.addToAniListById(searchResult.id, item, dataType);
-                }
-            } else if (targetPlatform === 'mal') {
-                // MAL doesn't have a search endpoint in our implementation
-                // This would need to be implemented if search functionality is needed
-                this.emitProgress({
-                    type: 'warning',
-                    message: `Search not implemented for MAL - skipping ${item.title}`,
-                    progress: 0
-                });
-                return false;
-            }
-
-            return false;
-        } catch (error) {
-            console.error(`Search failed for ${item.title}:`, error);
-            return false;
-        }
+        return normalizedData;
     }
 
     // Cancel running operation
