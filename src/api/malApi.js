@@ -73,35 +73,61 @@ class MALApiService {
         if (!codeVerifier) {
             throw new Error('Code verifier not found. Please try authenticating again.');
         }
-        
-        const response = await fetch('https://myanimelist.net/v1/oauth2/token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                client_id: this.clientId,
-                code: code,
-                code_verifier: codeVerifier,
-                grant_type: 'authorization_code',
-                redirect_uri: this.redirectUri
-            })
-        });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('MAL OAuth Error:', {
-                status: response.status,
-                statusText: response.statusText,
-                errorText: errorText
-            });
-            throw new Error(`Failed to exchange code for token: ${response.status} ${response.statusText} - ${errorText}`);
+        // Multiple CORS proxy options for reliability
+        const proxyOptions = [
+            'https://cors-anywhere.herokuapp.com/',
+            'https://api.allorigins.win/raw?url=',
+            'https://thingproxy.freeboard.io/fetch/'
+        ];
+
+        let lastError = null;
+        
+        for (const proxy of proxyOptions) {
+            try {
+                const tokenUrl = proxy + 'https://myanimelist.net/v1/oauth2/token';
+                
+                const response = await fetch(tokenUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Origin': window.location.origin,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams({
+                        client_id: this.clientId,
+                        code: code,
+                        code_verifier: codeVerifier,
+                        grant_type: 'authorization_code',
+                        redirect_uri: this.redirectUri
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.warn(`MAL OAuth Error with proxy ${proxy}:`, {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorText: errorText
+                    });
+                    lastError = new Error(`Failed to exchange code for token: ${response.status} ${response.statusText} - ${errorText}`);
+                    continue; // Try next proxy
+                }
+
+                const tokenData = await response.json();
+                console.log('MAL OAuth: Token exchange successful');
+                this.storeTokens(tokenData);
+                return tokenData;
+                
+            } catch (error) {
+                console.warn(`MAL OAuth Error with proxy ${proxy}:`, error);
+                lastError = error;
+                continue; // Try next proxy
+            }
         }
 
-        const tokenData = await response.json();
-        console.log('MAL OAuth: Token exchange successful');
-        this.storeTokens(tokenData);
-        return tokenData;
+        // If all proxies failed
+        throw lastError || new Error('All CORS proxies failed. Please try again later.');
     }
 
     // Store tokens securely

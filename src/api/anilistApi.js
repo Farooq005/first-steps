@@ -44,35 +44,61 @@ class AniListApiService {
             codeLength: code?.length
         });
         
-        const response = await fetch(this.tokenUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-                grant_type: 'authorization_code',
-                client_id: this.clientId,
-                client_secret: this.clientSecret,
-                redirect_uri: this.redirectUri,
-                code: code
-            })
-        });
+        // Multiple CORS proxy options for reliability
+        const proxyOptions = [
+            'https://cors-anywhere.herokuapp.com/',
+            'https://api.allorigins.win/raw?url=',
+            'https://thingproxy.freeboard.io/fetch/'
+        ];
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('AniList OAuth Error:', {
-                status: response.status,
-                statusText: response.statusText,
-                errorText: errorText
-            });
-            throw new Error(`Failed to exchange code for token: ${response.status} ${response.statusText} - ${errorText}`);
+        let lastError = null;
+        
+        for (const proxy of proxyOptions) {
+            try {
+                const tokenUrl = proxy + this.tokenUrl;
+                
+                const response = await fetch(tokenUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Origin': window.location.origin,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        grant_type: 'authorization_code',
+                        client_id: this.clientId,
+                        client_secret: this.clientSecret,
+                        redirect_uri: this.redirectUri,
+                        code: code
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.warn(`AniList OAuth Error with proxy ${proxy}:`, {
+                        status: response.status,
+                        statusText: response.statusText,
+                        errorText: errorText
+                    });
+                    lastError = new Error(`Failed to exchange code for token: ${response.status} ${response.statusText} - ${errorText}`);
+                    continue; // Try next proxy
+                }
+
+                const tokenData = await response.json();
+                console.log('AniList OAuth: Token exchange successful');
+                this.storeTokens(tokenData);
+                return tokenData;
+                
+            } catch (error) {
+                console.warn(`AniList OAuth Error with proxy ${proxy}:`, error);
+                lastError = error;
+                continue; // Try next proxy
+            }
         }
 
-        const tokenData = await response.json();
-        console.log('AniList OAuth: Token exchange successful');
-        this.storeTokens(tokenData);
-        return tokenData;
+        // If all proxies failed
+        throw lastError || new Error('All CORS proxies failed. Please try again later.');
     }
 
     // Store tokens securely

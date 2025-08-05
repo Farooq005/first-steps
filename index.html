@@ -570,6 +570,17 @@
         console.log('ProgressTracker available:', typeof window.ProgressTracker);
         console.log('JsonImporter available:', typeof window.JsonImporter);
 
+        // Show CORS proxy notice for GitHub Pages users
+        if (window.location.hostname.includes('github.io')) {
+            const noticeDiv = document.createElement('div');
+            noticeDiv.style.cssText = 'background: #1890ff; color: white; padding: 15px; margin: 10px 0; border-radius: 8px; text-align: center; font-size: 14px;';
+            noticeDiv.innerHTML = `
+                <strong>🔧 OAuth Note:</strong> This app uses CORS proxies to enable OAuth on GitHub Pages. 
+                If authentication fails, please try again in a few minutes or contact support.
+            `;
+            document.body.insertBefore(noticeDiv, document.body.firstChild);
+        }
+
         // Global application state
         let app = {
             syncService: null,
