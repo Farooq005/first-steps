@@ -747,18 +747,40 @@
         }
 
         function validateForm() {
-            const malUsername = document.getElementById('mal-username').value.trim();
-            const anilistUsername = document.getElementById('anilist-username').value.trim();
+            // Block sync actions if not authenticated
+            const malAuth = app.syncService?.isMALAuthenticated();
+            const anilistAuth = app.syncService?.isAniListAuthenticated();
             const syncTarget = document.getElementById('sync-target').value;
-            
-            const fetchBtn = document.getElementById('fetch-data-btn');
-            const isValid = malUsername && anilistUsername;
-            
-            fetchBtn.disabled = !isValid;
-            
-            // Update sync button based on results availability
             const syncBtn = document.getElementById('start-sync-btn');
-            syncBtn.disabled = !isValid || !syncTarget || !app.comparisonResults;
+            const fetchBtn = document.getElementById('fetch-data-btn');
+
+            let canSync = true;
+            let authError = '';
+
+            if (syncTarget === 'mal' && !malAuth) {
+                canSync = false;
+                authError = 'You must authenticate with MyAnimeList before syncing.';
+            } else if (syncTarget === 'anilist' && !anilistAuth) {
+                canSync = false;
+                authError = 'You must authenticate with AniList before syncing.';
+            }
+
+            if (syncBtn) syncBtn.disabled = !canSync;
+            if (fetchBtn) fetchBtn.disabled = !canSync;
+
+            // Show error if not authenticated
+            const authErrorDiv = document.getElementById('auth-error-msg');
+            if (!canSync && authError) {
+                if (authErrorDiv) {
+                    authErrorDiv.textContent = authError;
+                    authErrorDiv.style.display = 'block';
+                }
+            } else {
+                if (authErrorDiv) {
+                    authErrorDiv.textContent = '';
+                    authErrorDiv.style.display = 'none';
+                }
+            }
         }
 
         async function fetchUserData() {
@@ -866,13 +888,16 @@
         }
 
         async function startSync() {
+            // Check authentication before starting sync
             const syncTarget = document.getElementById('sync-target').value;
-            
-            if (!app.comparisonResults || !syncTarget) {
-                showAlert('error', 'Please fetch data and select a sync target first');
+            const malAuth = app.syncService?.isMALAuthenticated();
+            const anilistAuth = app.syncService?.isAniListAuthenticated();
+            if ((syncTarget === 'mal' && !malAuth) || (syncTarget === 'anilist' && !anilistAuth)) {
+                showAlert('error', 'Authentication expired or missing. Please re-authenticate and try again.');
+                updateAuthStatus();
                 return;
             }
-            
+
             const missingItems = syncTarget === 'anilist' 
                 ? app.comparisonResults.differences.malOnly 
                 : app.comparisonResults.differences.anilistOnly;
