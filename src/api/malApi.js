@@ -74,20 +74,36 @@ class MALApiService {
             throw new Error('Code verifier not found. Please try authenticating again.');
         }
 
-        // For now, we'll use a simpler approach that doesn't require OAuth token exchange
-        // This allows the app to work immediately while we solve the CORS issue
-        console.log('Using simplified MAL authentication (no token exchange)');
-        
-        // Store a mock token to indicate "authenticated" state
-        const mockTokenData = {
-            access_token: 'mock_token_' + Date.now(),
-            expires_in: 3600,
-            token_type: 'Bearer'
-        };
-        
-        this.storeTokens(mockTokenData);
-        console.log('MAL OAuth: Mock authentication successful');
-        return mockTokenData;
+        // Use your Cloudflare Worker proxy for real OAuth token exchange
+        const proxyUrl = 'https://first-steps-cy4.pages.dev/oauth-proxy';
+        try {
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    platform: 'mal',
+                    code: code,
+                    clientId: this.clientId,
+                    redirectUri: this.redirectUri,
+                    codeVerifier: codeVerifier
+                })
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`OAuth proxy failed: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(`OAuth failed: ${result.error}`);
+            }
+            this.storeTokens(result.data);
+            return result.data;
+        } catch (error) {
+            console.error('MAL OAuth Error:', error);
+            throw new Error(`OAuth token exchange failed: ${error.message}`);
+        }
     }
 
     // Store tokens securely
