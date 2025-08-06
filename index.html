@@ -795,32 +795,37 @@
         }
 
         function validateForm() {
-            // Block sync actions if not authenticated or in mock mode
+            // Only disable sync actions if not authenticated or required fields are missing
             const malAuth = app.syncService?.isMALAuthenticated();
             const anilistAuth = app.syncService?.isAniListAuthenticated();
             const syncTarget = document.getElementById('sync-target').value;
             const syncBtn = document.getElementById('start-sync-btn');
             const fetchBtn = document.getElementById('fetch-data-btn');
+            const malUsername = document.getElementById('mal-username').value.trim();
+            const anilistUsername = document.getElementById('anilist-username').value.trim();
 
             let canSync = true;
+            let canFetch = true;
             let authError = '';
 
-            // Check for mock token (demo mode)
-            const isMockMAL = localStorage.getItem('mal_access_token')?.startsWith('mock_token_');
-            const isMockAL = localStorage.getItem('anilist_access_token')?.startsWith('mock_token_');
-
-            if (syncTarget === 'mal' && (!malAuth || isMockMAL)) {
+            if (!malUsername || !anilistUsername) {
+                canFetch = false;
+            }
+            if (!syncTarget) {
                 canSync = false;
-                authError = 'You must authenticate with MyAnimeList (real OAuth) before syncing. Demo mode does not support writing.';
-            } else if (syncTarget === 'anilist' && (!anilistAuth || isMockAL)) {
+            }
+            if (syncTarget === 'mal' && !malAuth) {
                 canSync = false;
-                authError = 'You must authenticate with AniList (real OAuth) before syncing. Demo mode does not support writing.';
+                authError = 'You must authenticate with MyAnimeList before syncing.';
+            } else if (syncTarget === 'anilist' && !anilistAuth) {
+                canSync = false;
+                authError = 'You must authenticate with AniList before syncing.';
             }
 
             if (syncBtn) syncBtn.disabled = !canSync;
-            if (fetchBtn) fetchBtn.disabled = !canSync;
+            if (fetchBtn) fetchBtn.disabled = !canFetch;
 
-            // Show error if not authenticated or in demo mode
+            // Show error if not authenticated
             const authErrorDiv = document.getElementById('auth-error-msg');
             if (!canSync && authError) {
                 if (authErrorDiv) {
