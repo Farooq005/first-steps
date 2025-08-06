@@ -6,7 +6,7 @@ class MALApiService {
         this.baseUrl = 'https://api.myanimelist.net/v2';
         this.clientId = '7d40aab44a745bbefc83c9df14413f86'; // Replace with your actual client ID
         // Use full URL for GitHub Pages compatibility
-        this.redirectUri = window.location.href.split('?')[0]; // Remove query parameters
+        this.redirectUri = 'https://first-steps-cy4.pages.dev/'; // Cloudflare Pages deployment URL
         this.rateLimit = {
             requestsPerSecond: 1,
             lastRequestTime: 0

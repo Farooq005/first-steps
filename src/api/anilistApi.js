@@ -8,7 +8,7 @@ class AniListApiService {
         this.clientId = '29038'; // Replace with your actual client ID
         this.clientSecret = 'your_client_secret'; // Replace with your actual client secret
         // Use full URL for GitHub Pages compatibility
-        this.redirectUri = window.location.href.split('?')[0]; // Remove query parameters
+        this.redirectUri = 'https://first-steps-cy4.pages.dev/'; // Cloudflare Pages deployment URL
         
         this.rateLimit = {
             requestsPerMinute: 90,
