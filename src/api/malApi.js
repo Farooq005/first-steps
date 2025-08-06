@@ -237,7 +237,7 @@ class MALApiService {
         console.log(`Fetching MAL manga list for user: ${username}`);
         
         // Use Jikan API for public data access
-        const jikanUrl = `https://api.jikan.moe/v4/users/${username}/manga`;
+        const jikanUrl = `https://api.jikan.moe/v4/users/${username}/mangalist`;
         
         try {
             const response = await fetch(jikanUrl);
