@@ -5,11 +5,21 @@ class MALApiService {
     constructor() {
         this.baseUrl = 'https://api.myanimelist.net/v2';
         this.clientId = '7d40aab44a745bbefc83c9df14413f86'; // Replace with your actual client ID
-        this.redirectUri = window.location.origin + window.location.pathname;
+        // Use full URL for GitHub Pages compatibility
+        this.redirectUri = 'https://first-steps-cy4.pages.dev/'; // Cloudflare Pages deployment URL
         this.rateLimit = {
             requestsPerSecond: 1,
             lastRequestTime: 0
         };
+        
+        // Debug OAuth configuration
+        console.log('MAL OAuth Configuration:', {
+            clientId: this.clientId,
+            redirectUri: this.redirectUri,
+            currentUrl: window.location.href,
+            origin: window.location.origin,
+            pathname: window.location.pathname
+        });
     }
 
     // OAuth2 Authentication
@@ -63,35 +73,37 @@ class MALApiService {
         if (!codeVerifier) {
             throw new Error('Code verifier not found. Please try authenticating again.');
         }
-        
-        const response = await fetch('https://myanimelist.net/v1/oauth2/token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                client_id: this.clientId,
-                code: code,
-                code_verifier: codeVerifier,
-                grant_type: 'authorization_code',
-                redirect_uri: this.redirectUri
-            })
-        });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('MAL OAuth Error:', {
-                status: response.status,
-                statusText: response.statusText,
-                errorText: errorText
+        // Use your Netlify Function for real OAuth token exchange
+        const proxyUrl = 'https://anime-list-sync.netlify.app/.netlify/functions/oauth-proxy';
+        try {
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    platform: 'mal',
+                    code: code,
+                    clientId: this.clientId,
+                    redirectUri: this.redirectUri,
+                    codeVerifier: codeVerifier
+                })
             });
-            throw new Error(`Failed to exchange code for token: ${response.status} ${response.statusText} - ${errorText}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`OAuth proxy failed: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(`OAuth failed: ${result.error}`);
+            }
+            this.storeTokens(result.data);
+            return result.data;
+        } catch (error) {
+            console.error('MAL OAuth Error:', error);
+            throw new Error(`OAuth token exchange failed: ${error.message}`);
         }
-
-        const tokenData = await response.json();
-        console.log('MAL OAuth: Token exchange successful');
-        this.storeTokens(tokenData);
-        return tokenData;
     }
 
     // Store tokens securely
@@ -192,100 +204,94 @@ class MALApiService {
         return await response.json();
     }
 
-    // Get user's anime list
+    // Get user's anime list using Jikan API (no OAuth required)
     async getUserAnimeList(username = '@me', limit = 1000, offset = 0) {
-        const allAnime = [];
-        let hasMore = true;
-        let currentOffset = offset;
-
-        while (hasMore && allAnime.length < 10000) { // Safety limit
-            const endpoint = `/users/${username}/animelist?` +
-                `fields=list_status,num_episodes,start_date,finish_date,score,tags,comments,updated_at&` +
-                `limit=${Math.min(limit, 1000)}&` +
-                `offset=${currentOffset}&` +
-                `sort=list_updated_at`;
-
-            try {
-                const response = await this.makeRequest(endpoint);
-                
-                if (response.data && response.data.length > 0) {
-                    allAnime.push(...response.data);
-                    currentOffset += response.data.length;
-                    
-                    // Check if we have more data
-                    hasMore = response.paging && response.paging.next;
-                } else {
-                    hasMore = false;
-                }
-            } catch (error) {
-                console.error('Error fetching anime list:', error);
-                throw error;
+        console.log(`Fetching MAL anime list for user: ${username}`);
+        
+        // Use Jikan API for public data access
+        const jikanUrl = `https://api.jikan.moe/v4/users/${username}/anime`;
+        
+        try {
+            const response = await fetch(jikanUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Jikan API error: ${response.status} ${response.statusText}`);
             }
+            
+            const data = await response.json();
+            
+            if (!data.data) {
+                throw new Error('Invalid response from Jikan API');
+            }
+            
+            // Transform Jikan data to our format
+            const animeList = data.data.map(item => ({
+                id: item.anime.mal_id,
+                title: item.anime.title,
+                status: this.mapJikanStatus(item.status),
+                score: item.score || 0,
+                progress: item.episodes_watched || 0,
+                total_episodes: item.anime.episodes || 0,
+                start_date: item.watch_start_date,
+                finish_date: item.watch_end_date,
+                notes: '',
+                tags: [],
+                platform: 'mal'
+            }));
+            
+            console.log(`Fetched ${animeList.length} anime from MAL via Jikan API`);
+            return animeList;
+            
+        } catch (error) {
+            console.error('Error fetching MAL anime list:', error);
+            throw new Error(`Failed to fetch MAL anime list: ${error.message}`);
         }
-
-        return allAnime.map(item => ({
-            id: item.node.id,
-            title: item.node.title,
-            status: item.list_status.status,
-            score: item.list_status.score || 0,
-            progress: item.list_status.num_episodes_watched || 0,
-            total_episodes: item.node.num_episodes || 0,
-            start_date: item.list_status.start_date,
-            finish_date: item.list_status.finish_date,
-            updated_at: item.list_status.updated_at,
-            tags: item.list_status.tags || [],
-            comments: item.list_status.comments || '',
-            platform: 'mal'
-        }));
     }
 
-    // Get user's manga list
+    // Get user's manga list using Jikan API (no OAuth required)
     async getUserMangaList(username = '@me', limit = 1000, offset = 0) {
-        const allManga = [];
-        let hasMore = true;
-        let currentOffset = offset;
-
-        while (hasMore && allManga.length < 10000) { // Safety limit
-            const endpoint = `/users/${username}/mangalist?` +
-                `fields=list_status,num_chapters,num_volumes,start_date,finish_date,score,tags,comments,updated_at&` +
-                `limit=${Math.min(limit, 1000)}&` +
-                `offset=${currentOffset}&` +
-                `sort=list_updated_at`;
-
-            try {
-                const response = await this.makeRequest(endpoint);
-                
-                if (response.data && response.data.length > 0) {
-                    allManga.push(...response.data);
-                    currentOffset += response.data.length;
-                    
-                    // Check if we have more data
-                    hasMore = response.paging && response.paging.next;
-                } else {
-                    hasMore = false;
-                }
-            } catch (error) {
-                console.error('Error fetching manga list:', error);
-                throw error;
+        console.log(`Fetching MAL manga list for user: ${username}`);
+        
+        // Use Jikan API for public data access
+        const jikanUrl = `https://api.jikan.moe/v4/users/${username}/mangalist`;
+        
+        try {
+            const response = await fetch(jikanUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Jikan API error: ${response.status} ${response.statusText}`);
             }
+            
+            const data = await response.json();
+            
+            if (!data.data) {
+                throw new Error('Invalid response from Jikan API');
+            }
+            
+            // Transform Jikan data to our format
+            const mangaList = data.data.map(item => ({
+                id: item.manga.mal_id,
+                title: item.manga.title,
+                status: this.mapJikanStatus(item.status),
+                score: item.score || 0,
+                progress_chapters: item.chapters_read || 0,
+                progress_volumes: item.volumes_read || 0,
+                total_chapters: item.manga.chapters || 0,
+                total_volumes: item.manga.volumes || 0,
+                start_date: item.read_start_date,
+                finish_date: item.read_end_date,
+                notes: '',
+                tags: [],
+                platform: 'mal'
+            }));
+            
+            console.log(`Fetched ${mangaList.length} manga from MAL via Jikan API`);
+            return mangaList;
+            
+        } catch (error) {
+            console.error('Error fetching MAL manga list:', error);
+            throw new Error(`Failed to fetch MAL manga list: ${error.message}`);
         }
-
-        return allManga.map(item => ({
-            id: item.node.id,
-            title: item.node.title,
-            status: item.list_status.status,
-            score: item.list_status.score || 0,
-            progress_chapters: item.list_status.num_chapters_read || 0,
-            progress_volumes: item.list_status.num_volumes_read || 0,
-            total_chapters: item.node.num_chapters || 0,
-            total_volumes: item.node.num_volumes || 0,
-            start_date: item.list_status.start_date,
-            finish_date: item.list_status.finish_date,
-            updated_at: item.list_status.updated_at,
-            tags: item.list_status.tags || [],
-            comments: item.list_status.comments || '',
-            platform: 'mal'
-        }));
     }
 
     // Add anime to user's list
@@ -342,6 +348,20 @@ class MALApiService {
         localStorage.removeItem('mal_refresh_token');
         localStorage.removeItem('mal_expires_at');
         localStorage.removeItem('mal_code_verifier');
+    }
+
+    // Map Jikan status to our format
+    mapJikanStatus(jikanStatus) {
+        const statusMap = {
+            'watching': 'watching',
+            'completed': 'completed',
+            'on_hold': 'on_hold',
+            'dropped': 'dropped',
+            'plan_to_watch': 'plan_to_watch',
+            'reading': 'reading',
+            'plan_to_read': 'plan_to_read'
+        };
+        return statusMap[jikanStatus] || 'plan_to_watch';
     }
 }
 

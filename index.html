@@ -562,6 +562,25 @@
     <script src="src/components/JsonImporter.js"></script>
 
     <script>
+        // Debug script loading
+        console.log('Scripts loaded, checking for classes...');
+        console.log('MALApiService available:', typeof window.MALApiService);
+        console.log('AniListApiService available:', typeof window.AniListApiService);
+        console.log('SyncService available:', typeof window.SyncService);
+        console.log('ProgressTracker available:', typeof window.ProgressTracker);
+        console.log('JsonImporter available:', typeof window.JsonImporter);
+
+        // Show CORS proxy notice for GitHub Pages users
+        if (window.location.hostname.includes('github.io')) {
+            const noticeDiv = document.createElement('div');
+            noticeDiv.style.cssText = 'background: #1890ff; color: white; padding: 15px; margin: 10px 0; border-radius: 8px; text-align: center; font-size: 14px;';
+            noticeDiv.innerHTML = `
+                <strong>🔧 OAuth Note:</strong> This app uses CORS proxies to enable OAuth on GitHub Pages. 
+                If authentication fails, please try again in a few minutes or contact support.
+            `;
+            document.body.insertBefore(noticeDiv, document.body.firstChild);
+        }
+
         // Global application state
         let app = {
             syncService: null,
@@ -577,8 +596,27 @@
             initializeApp();
         });
 
-        function initializeApp() {
+        async function initializeApp() {
             try {
+                console.log('Starting application initialization...');
+                
+                // Check if all required classes are available
+                if (typeof window.MALApiService === 'undefined') {
+                    throw new Error('MALApiService not loaded');
+                }
+                if (typeof window.AniListApiService === 'undefined') {
+                    throw new Error('AniListApiService not loaded');
+                }
+                if (typeof window.SyncService === 'undefined') {
+                    throw new Error('SyncService not loaded');
+                }
+                if (typeof window.ProgressTracker === 'undefined') {
+                    throw new Error('ProgressTracker not loaded');
+                }
+                if (typeof window.JsonImporter === 'undefined') {
+                    throw new Error('JsonImporter not loaded');
+                }
+                
                 // Initialize services
                 app.syncService = new SyncService();
                 app.progressTracker = new ProgressTracker('progress-tracker');
@@ -606,6 +644,16 @@
             } catch (error) {
                 console.error('Failed to initialize application:', error);
                 showAlert('error', `Failed to initialize: ${error.message}`);
+                
+                // Show error in UI
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'background: #ff4d4f; color: white; padding: 20px; margin: 20px; border-radius: 8px; text-align: center;';
+                errorDiv.innerHTML = `
+                    <h3>🚨 Application Failed to Load</h3>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>Please check the browser console for more details and refresh the page.</p>
+                `;
+                document.body.insertBefore(errorDiv, document.body.firstChild);
             }
         }
 
@@ -635,8 +683,8 @@
         function switchTab(tabName) {
             // Update tab buttons
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
-            
+            const tabBtn = document.querySelector(`.tab[onclick*="switchTab('${tabName}')"]`);
+            if (tabBtn) tabBtn.classList.add('active');
             // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
@@ -747,18 +795,49 @@
         }
 
         function validateForm() {
+            // Only disable sync actions if not authenticated or required fields are missing
+            const malAuth = app.syncService?.isMALAuthenticated();
+            const anilistAuth = app.syncService?.isAniListAuthenticated();
+            const syncTarget = document.getElementById('sync-target').value;
+            const syncBtn = document.getElementById('start-sync-btn');
+            const fetchBtn = document.getElementById('fetch-data-btn');
             const malUsername = document.getElementById('mal-username').value.trim();
             const anilistUsername = document.getElementById('anilist-username').value.trim();
-            const syncTarget = document.getElementById('sync-target').value;
-            
-            const fetchBtn = document.getElementById('fetch-data-btn');
-            const isValid = malUsername && anilistUsername;
-            
-            fetchBtn.disabled = !isValid;
-            
-            // Update sync button based on results availability
-            const syncBtn = document.getElementById('start-sync-btn');
-            syncBtn.disabled = !isValid || !syncTarget || !app.comparisonResults;
+
+            let canSync = true;
+            let canFetch = true;
+            let authError = '';
+
+            if (!malUsername || !anilistUsername) {
+                canFetch = false;
+            }
+            if (!syncTarget) {
+                canSync = false;
+            }
+            if (syncTarget === 'mal' && !malAuth) {
+                canSync = false;
+                authError = 'You must authenticate with MyAnimeList before syncing.';
+            } else if (syncTarget === 'anilist' && !anilistAuth) {
+                canSync = false;
+                authError = 'You must authenticate with AniList before syncing.';
+            }
+
+            if (syncBtn) syncBtn.disabled = !canSync;
+            if (fetchBtn) fetchBtn.disabled = !canFetch;
+
+            // Show error if not authenticated
+            const authErrorDiv = document.getElementById('auth-error-msg');
+            if (!canSync && authError) {
+                if (authErrorDiv) {
+                    authErrorDiv.textContent = authError;
+                    authErrorDiv.style.display = 'block';
+                }
+            } else {
+                if (authErrorDiv) {
+                    authErrorDiv.textContent = '';
+                    authErrorDiv.style.display = 'none';
+                }
+            }
         }
 
         async function fetchUserData() {
@@ -866,43 +945,40 @@
         }
 
         async function startSync() {
+            // Check authentication before starting sync
             const syncTarget = document.getElementById('sync-target').value;
-            
+            const malAuth = app.syncService?.isMALAuthenticated();
+            const anilistAuth = app.syncService?.isAniListAuthenticated();
+            if ((syncTarget === 'mal' && !malAuth) || (syncTarget === 'anilist' && !anilistAuth)) {
+                showAlert('error', 'Authentication expired or missing. Please re-authenticate and try again.');
+                updateAuthStatus();
+                return;
+            }
+
             if (!app.comparisonResults || !syncTarget) {
                 showAlert('error', 'Please fetch data and select a sync target first');
                 return;
             }
-            
+
             const missingItems = syncTarget === 'anilist' 
                 ? app.comparisonResults.differences.malOnly 
                 : app.comparisonResults.differences.anilistOnly;
-            
-            if (missingItems.length === 0) {
-                showAlert('info', 'No items to sync - everything is already synchronized!');
+
+            if (!missingItems || missingItems.length === 0) {
+                showAlert('info', 'No missing items to sync!');
                 return;
             }
-            
+
+            // Show progress modal
+            app.progressTracker.show('Synchronizing...');
+
             try {
-                app.progressTracker.show(`Syncing to ${syncTarget.toUpperCase()}`);
-                
-                const results = await app.syncService.syncToTarget(
-                    missingItems, 
-                    syncTarget, 
-                    app.currentDataType
-                );
-                
+                const results = await app.syncService.syncToTarget(missingItems, syncTarget, app.currentDataType);
                 app.progressTracker.hide();
-                
-                const message = `Sync completed!\nSuccess: ${results.success}\nFailed: ${results.failed}`;
-                
-                if (results.failed > 0) {
-                    showAlert('warning', message + `\n\nSome items failed to sync. Check the logs for details.`);
-                } else {
-                    showAlert('success', message);
-                }
-                
+                showAlert('success', `Sync complete: ${results.success} successful, ${results.failed} failed`);
+                // Optionally update stats/results here
+                displayResults(app.comparisonResults);
             } catch (error) {
-                console.error('Sync error:', error);
                 app.progressTracker.hide();
                 showAlert('error', `Sync failed: ${error.message}`);
             }
@@ -983,8 +1059,6 @@
                 
                 // Switch to main tab
                 switchTab('username-sync');
-                document.querySelector('.tab[onclick="switchTab(\'username-sync\')"]').classList.add('active');
-                document.querySelector('.tab[onclick="switchTab(\'json-import\')"]').classList.remove('active');
                 
             } catch (error) {
                 console.error('JSON import error:', error);
