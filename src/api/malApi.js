@@ -74,8 +74,8 @@ class MALApiService {
             throw new Error('Code verifier not found. Please try authenticating again.');
         }
 
-        // Use your Cloudflare Worker proxy for real OAuth token exchange
-        const proxyUrl = 'https://first-steps-cy4.pages.dev/oauth-proxy';
+        // Use your Netlify Function for real OAuth token exchange
+        const proxyUrl = 'https://anime-list-sync.netlify.app/.netlify/functions/oauth-proxy';
         try {
             const response = await fetch(proxyUrl, {
                 method: 'POST',
