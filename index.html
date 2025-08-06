@@ -683,8 +683,8 @@
         function switchTab(tabName) {
             // Update tab buttons
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
-            
+            const tabBtn = document.querySelector(`.tab[onclick*="switchTab('${tabName}')"]`);
+            if (tabBtn) tabBtn.classList.add('active');
             // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             document.getElementById(tabName).classList.add('active');
@@ -946,36 +946,30 @@
                 return;
             }
 
+            if (!app.comparisonResults || !syncTarget) {
+                showAlert('error', 'Please fetch data and select a sync target first');
+                return;
+            }
+
             const missingItems = syncTarget === 'anilist' 
                 ? app.comparisonResults.differences.malOnly 
                 : app.comparisonResults.differences.anilistOnly;
-            
-            if (missingItems.length === 0) {
-                showAlert('info', 'No items to sync - everything is already synchronized!');
+
+            if (!missingItems || missingItems.length === 0) {
+                showAlert('info', 'No missing items to sync!');
                 return;
             }
-            
+
+            // Show progress modal
+            app.progressTracker.show('Synchronizing...');
+
             try {
-                app.progressTracker.show(`Syncing to ${syncTarget.toUpperCase()}`);
-                
-                const results = await app.syncService.syncToTarget(
-                    missingItems, 
-                    syncTarget, 
-                    app.currentDataType
-                );
-                
+                const results = await app.syncService.syncToTarget(missingItems, syncTarget, app.currentDataType);
                 app.progressTracker.hide();
-                
-                const message = `Sync completed!\nSuccess: ${results.success}\nFailed: ${results.failed}`;
-                
-                if (results.failed > 0) {
-                    showAlert('warning', message + `\n\nSome items failed to sync. Check the logs for details.`);
-                } else {
-                    showAlert('success', message);
-                }
-                
+                showAlert('success', `Sync complete: ${results.success} successful, ${results.failed} failed`);
+                // Optionally update stats/results here
+                displayResults(app.comparisonResults);
             } catch (error) {
-                console.error('Sync error:', error);
                 app.progressTracker.hide();
                 showAlert('error', `Sync failed: ${error.message}`);
             }
@@ -1056,8 +1050,6 @@
                 
                 // Switch to main tab
                 switchTab('username-sync');
-                document.querySelector('.tab[onclick="switchTab(\'username-sync\')"]').classList.add('active');
-                document.querySelector('.tab[onclick="switchTab(\'json-import\')"]').classList.remove('active');
                 
             } catch (error) {
                 console.error('JSON import error:', error);
