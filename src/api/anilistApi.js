@@ -5,10 +5,11 @@ class AniListApiService {
     constructor() {
         this.baseUrl = 'https://graphql.anilist.co';
         this.tokenUrl = 'https://anilist.co/api/v2/oauth/token';
-        this.clientId = '29038'; // Replace with your actual client ID
-        this.clientSecret = 'your_client_secret'; // Replace with your actual client secret
-        // Use full URL for GitHub Pages compatibility
-        this.redirectUri = 'https://first-steps-cy4.pages.dev/'; // Cloudflare Pages deployment URL
+        // Prefer runtime-provided values from window to avoid hard-coding
+        this.clientId = (window && window.ANILIST_CLIENT_ID) || '29038'; // Replace with your actual client ID
+        this.clientSecret = (window && window.ANILIST_CLIENT_SECRET) || ''; // Optional for public clients
+        // Use the deployed site origin as redirect URI to avoid mismatches
+        this.redirectUri = `${window.location.origin}/`;
         
         this.rateLimit = {
             requestsPerMinute: 90,
@@ -28,11 +29,13 @@ class AniListApiService {
 
     // OAuth2 Authentication
     async authenticate() {
-        const authUrl = `https://anilist.co/api/v2/oauth/authorize?` +
-            `client_id=${this.clientId}&` +
-            `redirect_uri=${encodeURIComponent(this.redirectUri)}&` +
-            `response_type=code`;
-        
+        const params = new URLSearchParams({
+            client_id: this.clientId,
+            redirect_uri: this.redirectUri,
+            response_type: 'code'
+        });
+
+        const authUrl = `https://anilist.co/api/v2/oauth/authorize?${params.toString()}`;
         window.location.href = authUrl;
     }
 
@@ -45,20 +48,25 @@ class AniListApiService {
         });
         
         // Use your Netlify Function for real OAuth token exchange
-        const proxyUrl = 'https://anime-list-sync.netlify.app/.netlify/functions/oauth-proxy';
+        const proxyUrl = (window && (window.OAUTH_PROXY_URL || (window.CONFIG && window.CONFIG.oauth_proxy_url))) || '/.netlify/functions/oauth-proxy';
         try {
+            const payload = {
+                platform: 'anilist',
+                code: code,
+                clientId: this.clientId,
+                redirectUri: this.redirectUri
+            };
+            // Only include clientSecret if present
+            if (this.clientSecret && this.clientSecret !== 'your_client_secret') {
+                payload.clientSecret = this.clientSecret;
+            }
+
             const response = await fetch(proxyUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    platform: 'anilist',
-                    code: code,
-                    clientId: this.clientId,
-                    clientSecret: this.clientSecret,
-                    redirectUri: this.redirectUri
-                })
+                body: JSON.stringify(payload)
             });
             if (!response.ok) {
                 const errorText = await response.text();

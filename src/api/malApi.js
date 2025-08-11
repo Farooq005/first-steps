@@ -4,9 +4,9 @@
 class MALApiService {
     constructor() {
         this.baseUrl = 'https://api.myanimelist.net/v2';
-        this.clientId = '7d40aab44a745bbefc83c9df14413f86'; // Replace with your actual client ID
-        // Use full URL for GitHub Pages compatibility
-        this.redirectUri = 'https://first-steps-cy4.pages.dev/'; // Cloudflare Pages deployment URL
+        this.clientId = (window && (window.MAL_CLIENT_ID || (window.CONFIG && window.CONFIG.mal && window.CONFIG.mal.client_id))) || '7d40aab44a745bbefc83c9df14413f86'; // Replace with your actual client ID
+        // Use deployed origin to avoid redirect mismatches
+        this.redirectUri = `${window.location.origin}/`;
         this.rateLimit = {
             requestsPerSecond: 1,
             lastRequestTime: 0
@@ -24,14 +24,15 @@ class MALApiService {
 
     // OAuth2 Authentication
     async authenticate() {
-        const authUrl = `https://myanimelist.net/v1/oauth2/authorize?` +
-            `response_type=code&` +
-            `client_id=${this.clientId}&` +
-            `redirect_uri=${encodeURIComponent(this.redirectUri)}&` +
-            `code_challenge=${await this.generateCodeChallenge()}&` +
-            `code_challenge_method=S256&` +
-            `scope=read write`;
-        
+        const params = new URLSearchParams({
+            response_type: 'code',
+            client_id: this.clientId,
+            redirect_uri: this.redirectUri,
+            code_challenge: await this.generateCodeChallenge(),
+            code_challenge_method: 'S256',
+            scope: 'read write'
+        });
+        const authUrl = `https://myanimelist.net/v1/oauth2/authorize?${params.toString()}`;
         window.location.href = authUrl;
     }
 
@@ -75,7 +76,7 @@ class MALApiService {
         }
 
         // Use your Netlify Function for real OAuth token exchange
-        const proxyUrl = 'https://anime-list-sync.netlify.app/.netlify/functions/oauth-proxy';
+        const proxyUrl = (window && (window.OAUTH_PROXY_URL || (window.CONFIG && window.CONFIG.oauth_proxy_url))) || '/.netlify/functions/oauth-proxy';
         try {
             const response = await fetch(proxyUrl, {
                 method: 'POST',
