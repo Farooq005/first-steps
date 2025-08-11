@@ -556,10 +556,25 @@
 
     <!-- Load all components and services -->
     <script src="src/api/malApi.js"></script>
+    <script src="config.js"></script>
     <script src="src/api/anilistApi.js"></script>
     <script src="src/services/syncService.js"></script>
     <script src="src/components/ProgressTracker.js"></script>
     <script src="src/components/JsonImporter.js"></script>
+
+    <script>
+        // Expose AniList client details to services if a global CONFIG is present
+        try {
+            if (window.CONFIG && window.CONFIG.anilist) {
+                window.ANILIST_CLIENT_ID = window.CONFIG.anilist.client_id;
+                if (window.CONFIG.anilist.client_secret) {
+                    window.ANILIST_CLIENT_SECRET = window.CONFIG.anilist.client_secret;
+                }
+            }
+        } catch (e) {
+            console.warn('CONFIG not found or invalid:', e);
+        }
+    </script>
 
     <script>
         // Debug script loading
