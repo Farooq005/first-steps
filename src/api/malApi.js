@@ -4,7 +4,7 @@
 class MALApiService {
     constructor() {
         this.baseUrl = 'https://api.myanimelist.net/v2';
-        this.clientId = '7d40aab44a745bbefc83c9df14413f86'; // Replace with your actual client ID
+        this.clientId = (window && (window.MAL_CLIENT_ID || (window.CONFIG && window.CONFIG.mal && window.CONFIG.mal.client_id))) || '7d40aab44a745bbefc83c9df14413f86'; // Replace with your actual client ID
         // Use deployed origin to avoid redirect mismatches
         this.redirectUri = `${window.location.origin}/`;
         this.rateLimit = {

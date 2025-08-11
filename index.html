@@ -571,6 +571,9 @@
                     window.ANILIST_CLIENT_SECRET = window.CONFIG.anilist.client_secret;
                 }
             }
+            if (window.CONFIG && window.CONFIG.mal && window.CONFIG.mal.client_id) {
+                window.MAL_CLIENT_ID = window.CONFIG.mal.client_id;
+            }
         } catch (e) {
             console.warn('CONFIG not found or invalid:', e);
         }
