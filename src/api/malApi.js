@@ -76,7 +76,7 @@ class MALApiService {
         }
 
         // Use your Netlify Function for real OAuth token exchange
-        const proxyUrl = 'https://anime-list-sync.netlify.app/.netlify/functions/oauth-proxy';
+        const proxyUrl = '/.netlify/functions/oauth-proxy';
         try {
             const response = await fetch(proxyUrl, {
                 method: 'POST',
