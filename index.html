@@ -574,6 +574,9 @@
             if (window.CONFIG && window.CONFIG.mal && window.CONFIG.mal.client_id) {
                 window.MAL_CLIENT_ID = window.CONFIG.mal.client_id;
             }
+            if (window.CONFIG && window.CONFIG.oauth_proxy_url) {
+                window.OAUTH_PROXY_URL = window.CONFIG.oauth_proxy_url;
+            }
         } catch (e) {
             console.warn('CONFIG not found or invalid:', e);
         }

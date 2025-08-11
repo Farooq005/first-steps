@@ -48,7 +48,7 @@ class AniListApiService {
         });
         
         // Use your Netlify Function for real OAuth token exchange
-        const proxyUrl = '/.netlify/functions/oauth-proxy';
+        const proxyUrl = (window && (window.OAUTH_PROXY_URL || (window.CONFIG && window.CONFIG.oauth_proxy_url))) || '/.netlify/functions/oauth-proxy';
         try {
             const payload = {
                 platform: 'anilist',
